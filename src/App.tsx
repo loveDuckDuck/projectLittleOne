@@ -17,7 +17,7 @@ import { CUSTOM_FONT_FAMILY } from './utils/assets';
 interface Toast { id: number; message: string; error?: boolean }
 interface DragGeometry {
   page: { left: number; top: number; right: number; bottom: number };
-  rows: { id: string; top: number; bottom: number; columns: { id: string; left: number; right: number; blocks: { top: number; bottom: number }[] }[] }[];
+  rows: { id: string; top: number; bottom: number; columns: { id: string; left: number; right: number; top: number; bottom: number; blocks: { id: string; left: number; right: number; top: number; bottom: number }[] }[] }[];
 }
 
 export default function App() {
@@ -159,16 +159,22 @@ export default function App() {
     if (activeId.startsWith('row:')) return { kind: 'row', rowId, side: y < (row.top + row.bottom) / 2 ? 'above' : 'below' };
     const column = row.columns.find((item) => x < item.right) ?? row.columns[row.columns.length - 1];
     if (!column) return { kind: 'row', rowId, side: 'below' };
-    const columnMidpoint = (column.left + column.right) / 2;
-    if (row.columns.length < 3 && column.blocks.length && y >= row.top - 18 && y <= row.bottom + 18) {
-      if (x < columnMidpoint) return { kind: 'side', rowId, columnId: column.id, side: 'left' };
-      return { kind: 'side', rowId, columnId: column.id, side: 'right' };
+    const blockIndex = column.blocks.findIndex((block) => x >= block.left && x <= block.right && y >= block.top && y <= block.bottom);
+    if (blockIndex >= 0) {
+      const block = column.blocks[blockIndex];
+      const source = locateBlock(document, activeId);
+      const movingAcrossColumns = source && row.columns.length > 1 && source.column.id !== column.id;
+      const edgeZone = Math.min(34, (block.right - block.left) * .16);
+      if (block.id !== activeId && row.columns.length < 3 && !movingAcrossColumns) {
+        if (x - block.left <= edgeZone) return { kind: 'side', rowId, columnId: column.id, side: 'left' };
+        if (block.right - x <= edgeZone) return { kind: 'side', rowId, columnId: column.id, side: 'right' };
+      }
+      return { kind: 'column', rowId, columnId: column.id, index: blockIndex + (y >= (block.top + block.bottom) / 2 ? 1 : 0) };
     }
-    const edgeZone = Math.min(12, (row.bottom - row.top) * .12);
-    if (y < row.top + edgeZone) return { kind: 'row', rowId, side: 'above' };
-    if (y > row.bottom - edgeZone) return { kind: 'row', rowId, side: 'below' };
-    const index = column.blocks.findIndex((block) => y < (block.top + block.bottom) / 2);
-    return { kind: 'column', rowId, columnId: column.id, index: index < 0 ? column.blocks.length : index };
+    if (column.blocks.length === 0 && x >= column.left && x <= column.right && y >= column.top && y <= column.bottom) {
+      return { kind: 'column', rowId, columnId: column.id, index: 0 };
+    }
+    return { kind: 'row', rowId, side: y < (row.top + row.bottom) / 2 ? 'above' : 'below' };
   }
   function onDragStart(event: DragStartEvent) {
     const page = globalThis.document.getElementById('cv-print-area');
@@ -179,7 +185,7 @@ export default function App() {
         const rect = row.getBoundingClientRect();
         return { id: row.dataset.rowId!, top: rect.top, bottom: rect.bottom, columns: Array.from(row.querySelectorAll<HTMLElement>('.cv-column')).map((column) => {
           const bounds = column.getBoundingClientRect();
-          return { id: column.dataset.columnId!, left: bounds.left, right: bounds.right, blocks: Array.from(column.querySelectorAll<HTMLElement>('.canvas-block')).map((block) => { const blockRect = block.getBoundingClientRect(); return { top: blockRect.top, bottom: blockRect.bottom }; }) };
+          return { id: column.dataset.columnId!, left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom, blocks: Array.from(column.querySelectorAll<HTMLElement>('.canvas-block')).map((block) => { const blockRect = block.getBoundingClientRect(); return { id: block.dataset.blockId!, left: blockRect.left, right: blockRect.right, top: blockRect.top, bottom: blockRect.bottom }; }) };
         }) };
       }),
     } : null;

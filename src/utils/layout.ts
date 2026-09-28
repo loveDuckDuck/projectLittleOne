@@ -32,14 +32,29 @@ export function mapBlock(document: CVDocument, id: string, update: (block: CVBlo
   return { ...document, rows: document.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.map((block) => block.id === id ? update(block) : block) })) })) };
 }
 
+function compactRow(row: CVRow): CVRow | null {
+  const columns = row.columns.filter((column) => column.blocks.length > 0);
+  if (columns.length === 0) return null;
+  if (columns.length === row.columns.length) return row;
+  const total = columns.reduce((sum, column) => sum + column.width, 0);
+  let assigned = 0;
+  return { ...row, columns: columns.map((column, index) => {
+    const width = index === columns.length - 1 ? 100 - assigned : Math.round(column.width / total * 100);
+    assigned += width;
+    return { ...column, width };
+  }) };
+}
+
 export function removeBlock(document: CVDocument, id: string): CVDocument {
-  return { ...document, rows: document.rows.map((row) => {
-    const columns = row.columns.map((column) => ({ ...column, blocks: column.blocks.filter((block) => block.id !== id) }))
-      .filter((column, index, all) => column.blocks.length > 0 || row.columns[index].blocks.length === 0 || !all.some((item) => item.blocks.length > 0));
-    const total = columns.reduce((sum, column) => sum + column.width, 0);
-    const normalized = columns.map((column, index) => ({ ...column, width: index === columns.length - 1 ? 100 - columns.slice(0, -1).reduce((sum, item) => sum + Math.round(item.width / total * 100), 0) : Math.round(column.width / total * 100) }));
-    return { ...row, columns: normalized };
-  }).filter((row) => row.columns.some((column) => column.blocks.length > 0) || row.columns.length > 1) };
+  const source = locateBlock(document, id);
+  if (!source) return document;
+  return { ...document, rows: document.rows.flatMap((row) => {
+    if (row.id !== source.row.id) return [row];
+    const columns = row.columns.map((column) => ({ ...column, blocks: column.blocks.filter((block) => block.id !== id) }));
+    const updated = columns.find((column) => column.id === source.column.id)?.blocks.length === 0
+      ? compactRow({ ...row, columns }) : { ...row, columns };
+    return updated ? [updated] : [];
+  }) };
 }
 
 export function placeBlock(document: CVDocument, block: CVBlock, target: DropTarget | null): CVDocument {
@@ -77,7 +92,11 @@ export function moveBlockTo(document: CVDocument, block: CVBlock, target: DropTa
   const without = { ...document, rows: document.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.filter((item) => item.id !== block.id) })) })) };
   const placed = placeBlock(without, block, target);
   if (!locateBlock(placed, block.id)) return document;
-  return { ...placed, rows: placed.rows.filter((row) => row.columns.length > 1 || row.columns.some((column) => column.blocks.length > 0)) };
+  return { ...placed, rows: placed.rows.flatMap((row) => {
+    if (row.id !== source.row.id || row.columns.find((column) => column.id === source.column.id)?.blocks.length) return [row];
+    const updated = compactRow(row);
+    return updated ? [updated] : [];
+  }) };
 }
 
 export function setRowPreset(document: CVDocument, rowId: string, widths: readonly number[]): CVDocument {

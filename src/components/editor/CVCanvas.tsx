@@ -132,6 +132,6 @@ export function CVCanvas(props: CVCanvasProps) {
       {document.rows.length === 0 && !preview && <div className="empty-canvas">Scegli un blocco dalla libreria o trascinalo qui.</div>}
       {slices.slice(0, -1).map((slice, index) => <div className="page-break-indicator" style={{ top: `${slice.end}px` }} key={index}><span>Pagina {index + 2}</span></div>)}
     </div></div>
-    {!preview && <p className="canvas-caption">Trascina un blocco sul lato sinistro o destro di un altro per creare una colonna. Scrivi nei blocchi Testo e Titolo; trascina il divisore per regolare la larghezza delle colonne.</p>}
+    {!preview && <p className="canvas-caption">Trascina un blocco vicino al bordo sinistro o destro di un altro per creare una colonna. Rilascialo al centro per inserirlo nella colonna, o fuori dal blocco per creare una riga. Scrivi nei blocchi Testo e Titolo; trascina il divisore per regolare la larghezza delle colonne.</p>}
   </main>;
 }
