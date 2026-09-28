@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import ts from '../node_modules/typescript/lib/typescript.js';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { resolve, dirname } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const sourceFiles = ['src/utils/layout.ts', 'src/models/createBlock.ts', 'src/store/initialDocument.ts', 'src/utils/documentStorage.ts'];
+for (const path of sourceFiles) {
+  const source = await readFile(path, 'utf8');
+  const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText.replace(/(from\s+['"])(\.\.?\/[^'"]+)(['"])/g, '$1$2.mjs$3');
+  const destination = resolve('tmp/check', path.replace(/^src\//, '').replace(/\.ts$/, '.mjs'));
+  await mkdir(dirname(destination), { recursive: true });
+  await writeFile(destination, output);
+}
+async function load(path) { return import(pathToFileURL(resolve('tmp/check', path.replace(/^src\//, '').replace(/\.ts$/, '.mjs'))).href); }
+
+const layout = await load('src/utils/layout.ts');
+const { createBlock, createStarterDocument } = await load('src/models/createBlock.ts');
+const { parseDocument } = await load('src/utils/documentStorage.ts');
+const { initialDocument } = await load('src/store/initialDocument.ts');
+const education = createBlock('education');
+const skills = createBlock('skills');
+const languages = createBlock('languages');
+let document = createStarterDocument(true);
+document = layout.placeBlock(document, education, null);
+document = layout.placeBlock(document, skills, { kind: 'row', rowId: document.rows[0].id, side: 'below' });
+document = layout.moveBlockTo(document, skills, { kind: 'side', rowId: document.rows[0].id, columnId: document.rows[0].columns[0].id, side: 'right' });
+assert.equal(document.rows.length, 1);
+assert.deepEqual(document.rows[0].columns.map((column) => column.width), [50, 50]);
+assert.deepEqual(layout.blocksOf(document).map((block) => block.id), [education.id, skills.id]);
+const separated = layout.moveBlockTo(document, skills, { kind: 'row', rowId: document.rows[0].id, side: 'below' });
+assert.equal(separated.rows.length, 2);
+assert.deepEqual(separated.rows.map((row) => row.columns.length), [2, 1]);
+let withEmpty = layout.placeBlock(createStarterDocument(true), createBlock('text'), null);
+const moving = withEmpty.rows[0].columns[0].blocks[0];
+const splitByMoving = layout.moveBlockTo(withEmpty, moving, { kind: 'side', rowId: withEmpty.rows[0].id, columnId: withEmpty.rows[0].columns[0].id, side: 'right' });
+assert.deepEqual(splitByMoving.rows[0].columns.map((column) => column.blocks.map((block) => block.id)), [[], [moving.id]]);
+withEmpty = layout.setRowPreset(withEmpty, withEmpty.rows[0].id, [50, 50]);
+const [firstId, secondId] = withEmpty.rows[0].columns.map((column) => column.id);
+withEmpty = layout.moveBlockTo(withEmpty, moving, { kind: 'column', rowId: withEmpty.rows[0].id, columnId: secondId, index: 0 });
+assert.deepEqual(withEmpty.rows[0].columns.map((column) => column.blocks.map((block) => block.id)), [[], [moving.id]]);
+withEmpty = layout.moveColumn(withEmpty, withEmpty.rows[0].id, secondId, firstId);
+assert.deepEqual(withEmpty.rows[0].columns.map((column) => column.id), [secondId, firstId]);
+document = layout.resizeColumns(document, document.rows[0].id, 0, 70);
+assert.deepEqual(document.rows[0].columns.map((column) => column.width), [70, 30]);
+const thirdFromNarrow = layout.placeBlock(document, createBlock('text'), { kind: 'side', rowId: document.rows[0].id, columnId: document.rows[0].columns[1].id, side: 'right' });
+assert.deepEqual(thirdFromNarrow.rows[0].columns.map((column) => column.width), [60, 20, 20]);
+const thirdFromWide = layout.placeBlock(document, createBlock('text'), { kind: 'side', rowId: document.rows[0].id, columnId: document.rows[0].columns[0].id, side: 'right' });
+assert.deepEqual(thirdFromWide.rows[0].columns.map((column) => column.width), [35, 35, 30]);
+document = layout.placeBlock(document, languages, { kind: 'column', rowId: document.rows[0].id, columnId: document.rows[0].columns[1].id, index: 1 });
+assert.deepEqual(document.rows[0].columns[1].blocks.map((block) => block.id), [skills.id, languages.id]);
+const twoColumns = structuredClone(document);
+document = layout.setRowPreset(document, document.rows[0].id, [100]);
+assert.equal(document.rows[0].columns.length, 1);
+assert.equal(layout.blocksOf(document).length, 3);
+assert.equal(twoColumns.rows[0].columns.length, 2);
+document = layout.moveBlockTo(twoColumns, skills, { kind: 'row', rowId: twoColumns.rows[0].id, side: 'below' });
+assert.equal(document.rows.length, 2);
+assert.equal(layout.blocksOf(document).length, 3);
+const raw = JSON.parse(JSON.stringify(twoColumns));
+assert.deepEqual(parseDocument(raw), raw);
+assert.equal(layout.blocksOf(parseDocument(initialDocument)).length, initialDocument.blocks.length);
+assert.equal(parseDocument(initialDocument).rows.length, initialDocument.blocks.length);
+assert.equal(parseDocument(initialDocument).version, 2);
+assert.throws(() => parseDocument({ ...raw, rows: [{ ...raw.rows[0], columns: raw.rows[0].columns.map((column) => ({ ...column, width: 80 })) }] }));
+console.log('Layout and migration checks passed');

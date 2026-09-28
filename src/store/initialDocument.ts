@@ -1,0 +1,86 @@
+import type { CVBlock, GlobalCVStyle } from '../models/cv';
+
+export const initialDocument: { version: 1; globalStyle: GlobalCVStyle; blocks: CVBlock[] } = {
+  version: 1,
+  globalStyle: {
+    fontFamily: 'Arial',
+    textColor: '#243047',
+    accentColor: '#315d91',
+    baseFontSize: 11,
+    pageMargin: 19,
+    sectionSpacing: 12,
+  },
+  blocks: [
+    {
+      id: 'sample-personal',
+      type: 'personal',
+      data: {
+        firstName: 'Alex',
+        lastName: 'Morgan',
+        professionalTitle: 'Product Designer',
+        email: 'alex.morgan@example.com',
+        phone: '+39 333 123 4567',
+        city: 'Verona',
+        country: 'Italia',
+        linkedIn: '',
+        github: '',
+        website: 'alexmorgan.design',
+        summary: 'Progetto esperienze digitali chiare e accessibili, unendo ricerca, design visivo e collaborazione con i team di sviluppo.',
+      },
+      style: { marginBottom: 20 },
+    },
+    {
+      id: 'sample-experience-heading',
+      type: 'heading',
+      data: { text: 'Esperienza professionale', level: 2, uppercase: true, underline: false, accentLine: true },
+      style: { marginTop: 8, marginBottom: 11 },
+    },
+    {
+      id: 'sample-experience',
+      type: 'experience',
+      data: {
+        title: 'Senior Product Designer',
+        company: 'Studio North',
+        location: 'Milano',
+        startDate: '2022-03',
+        endDate: '',
+        current: true,
+        description: 'Guido il design di prodotti digitali dalla scoperta alla consegna.',
+        bullets: ['Progettazione di flussi e interfacce per applicazioni web', 'Collaborazione con ricerca, prodotto e sviluppo', 'Creazione e manutenzione del design system'],
+      },
+      style: { marginBottom: 17 },
+    },
+    {
+      id: 'sample-education-heading',
+      type: 'heading',
+      data: { text: 'Formazione', level: 2, uppercase: true, underline: false, accentLine: true },
+      style: { marginTop: 8, marginBottom: 11 },
+    },
+    {
+      id: 'sample-education',
+      type: 'education',
+      data: {
+        degree: 'Laurea in Design della Comunicazione',
+        school: 'Politecnico di Milano',
+        location: 'Milano',
+        startDate: '2016-09',
+        endDate: '2019-07',
+        description: '',
+        bullets: [],
+      },
+      style: { marginBottom: 16 },
+    },
+    {
+      id: 'sample-skills-heading',
+      type: 'heading',
+      data: { text: 'Competenze', level: 2, uppercase: true, underline: false, accentLine: true },
+      style: { marginTop: 8, marginBottom: 11 },
+    },
+    {
+      id: 'sample-skills',
+      type: 'skills',
+      data: { layout: 'inline', items: ['Product design', 'UX research', 'Prototipazione', 'Design system', 'Figma'], groups: [] },
+      style: {},
+    },
+  ],
+};
