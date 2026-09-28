@@ -1,3 +1,5 @@
+import type { ProfilePhotoShape } from './profilePhoto';
+
 export type CVBlockType =
   | 'personal'
   | 'text'
@@ -66,6 +68,10 @@ export interface PersonalData {
   github: string;
   website: string;
   summary: string;
+  photoSrc: string;
+  photoPosition: 'left' | 'right';
+  photoShape: ProfilePhotoShape;
+  photoSize: number;
 }
 
 export interface ExperienceData {

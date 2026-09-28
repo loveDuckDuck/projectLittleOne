@@ -28,7 +28,17 @@ function content(block: CVBlock, editable = false, onEditText?: (value: string) 
     case 'personal': {
       const d = block.data;
       const contacts = [d.email, d.phone, [d.city, d.country].filter(Boolean).join(', '), d.website, d.linkedIn, d.github].filter(Boolean);
-      return <div className="cv-personal"><h1>{[d.firstName, d.lastName].filter(Boolean).join(' ')}</h1>{d.professionalTitle && <p className="cv-role">{d.professionalTitle}</p>}{contacts.length > 0 && <p className="cv-contacts">{contacts.join('  ·  ')}</p>}{d.summary && <p className="cv-summary">{d.summary}</p>}</div>;
+      const name = [d.firstName, d.lastName].filter(Boolean).join(' ');
+      const photo = d.photoSrc && <span className={`profile-photo-frame cv-profile-photo photo-shape-${d.photoShape}`} style={{ '--profile-photo-size': `${d.photoSize}px` } as CSSProperties}><img src={d.photoSrc} alt={`Foto profilo di ${name || 'questa persona'}`} /></span>;
+      return <div className="cv-personal">
+        <div className={`cv-personal-head ${photo ? 'has-photo' : ''}`}>
+          {d.photoPosition === 'left' && photo}
+          <div className="cv-personal-copy"><h1>{name}</h1>{d.professionalTitle && <p className="cv-role">{d.professionalTitle}</p>}</div>
+          {d.photoPosition === 'right' && photo}
+        </div>
+        {contacts.length > 0 && <p className="cv-contacts">{contacts.join('  ·  ')}</p>}
+        {d.summary && <p className="cv-summary">{d.summary}</p>}
+      </div>;
     }
     case 'heading':
       return <h2 className={`cv-heading level-${block.data.level} ${block.data.accentLine ? 'has-accent-line' : ''} ${block.data.uppercase ? 'is-uppercase' : ''} ${block.data.underline ? 'is-underlined' : ''}`} contentEditable={editable} suppressContentEditableWarning onBlur={editable ? (event) => onEditText?.(event.currentTarget.innerText) : undefined} onKeyDown={editable ? (event) => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } } : undefined} role={editable ? 'textbox' : undefined} aria-label={editable ? 'Modifica titolo' : undefined}>{block.data.text}</h2>;

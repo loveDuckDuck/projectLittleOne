@@ -2,6 +2,7 @@ import type { CVBlock, CVBlockType, CVDocument } from '../models/cv';
 import { createBlock, createStarterDocument } from '../models/createBlock';
 import { singleRow } from './layout';
 import { CUSTOM_FONT_FAMILY, FONT_DATA_URL, IMAGE_DATA_URL, STANDARD_FONTS } from './assets';
+import { profilePhotoShapes } from '../models/profilePhoto';
 
 const STORAGE_KEY = 'cv-builder-document-v1';
 const blockTypes: CVBlockType[] = ['personal', 'text', 'heading', 'experience', 'education', 'bulletList', 'skills', 'hobbies', 'languages', 'projects', 'certifications', 'divider', 'spacer', 'image', 'custom'];
@@ -26,6 +27,7 @@ function matchesShape(value: unknown, example: unknown): boolean {
 
 function normalizedBlockData(type: CVBlockType, value: unknown): unknown {
   if (!isRecord(value)) return value;
+  if (type === 'personal') return { ...createBlock('personal').data, ...value };
   if (type === 'custom' && !('bullets' in value)) return { ...value, bullets: [] };
   if (type === 'skills') return {
     ...value,
@@ -51,6 +53,7 @@ function validBlock(value: unknown): value is CVBlock {
   const shapedData = normalizedBlockData(value.type as CVBlockType, value.data);
   if (!matchesShape(shapedData, example.data)) return false;
   const data = shapedData as Record<string, unknown>;
+  if (value.type === 'personal' && ((data.photoSrc !== '' && !isBackgroundImage(data.photoSrc)) || !['left', 'right'].includes(String(data.photoPosition)) || !profilePhotoShapes.some((shape) => shape.id === data.photoShape) || typeof data.photoSize !== 'number' || !Number.isFinite(data.photoSize) || data.photoSize < 64 || data.photoSize > 180)) return false;
   if (value.type === 'heading' && (![1, 2, 3].includes(data.level as number))) return false;
   if (value.type === 'bulletList' && !['disc', 'circle', 'square'].includes(String(data.marker))) return false;
   if (value.type === 'skills' && (!['list', 'inline', 'grouped', 'rated'].includes(String(data.layout)) || ![1, 2, 3].includes(data.columns as number) || (data.ratings as number[]).length !== (data.items as string[]).length || (data.ratings as number[]).some((rating) => !Number.isFinite(rating) || rating < 0 || rating > 5 || rating * 4 !== Math.round(rating * 4)))) return false;

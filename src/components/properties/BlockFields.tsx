@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CVBlock, CVBlockDataMap } from '../../models/cv';
+import { profilePhotoShapes } from '../../models/profilePhoto';
 import { readImage } from '../../utils/assets';
 
 interface Props {
@@ -56,11 +57,26 @@ function ImageFields({ data, onChange }: { data: CVBlockDataMap['image']; onChan
   </>;
 }
 
+function ProfilePhotoFields({ data, onChange }: { data: CVBlockDataMap['personal']; onChange: (data: CVBlockDataMap['personal']) => void }) {
+  const [error, setError] = useState('');
+  return <div className="profile-photo-fields">
+    <h4>Foto profilo</h4>
+    <label className="form-field"><span>Carica foto (PNG, JPG, WebP)</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={async (event) => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { onChange({ ...data, photoSrc: await readImage(file, 640) }); setError(''); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Foto non valida.'); } }} /></label>
+    {error && <p className="field-error" role="alert">{error}</p>}
+    {data.photoSrc && <>
+      <div className="profile-photo-field-preview"><span className={`profile-photo-frame photo-shape-${data.photoShape}`}><img src={data.photoSrc} alt="Anteprima foto profilo" /></span><button type="button" className="text-action" onClick={() => onChange({ ...data, photoSrc: '' })}>Rimuovi foto</button></div>
+      <div className="profile-photo-control"><span className="field-label">Posizione</span><div className="profile-photo-position" role="group" aria-label="Posizione foto profilo"><button type="button" aria-label="Foto a sinistra" aria-pressed={data.photoPosition === 'left'} onClick={() => onChange({ ...data, photoPosition: 'left' })}>Sinistra</button><button type="button" aria-label="Foto a destra" aria-pressed={data.photoPosition === 'right'} onClick={() => onChange({ ...data, photoPosition: 'right' })}>Destra</button></div></div>
+      <div className="profile-photo-control"><span className="field-label">Forma</span><div className="profile-photo-shapes" role="group" aria-label="Forma foto profilo">{profilePhotoShapes.map((shape) => <button type="button" key={shape.id} aria-label={`Forma ${shape.label}`} aria-pressed={data.photoShape === shape.id} onClick={() => onChange({ ...data, photoShape: shape.id })}><span className={`profile-shape-sample photo-shape-${shape.id}`} aria-hidden="true" /><span>{shape.label}</span></button>)}</div></div>
+      <label className="form-field"><span>Dimensione: {data.photoSize}px</span><input type="range" min={64} max={180} step={2} value={data.photoSize} onChange={(event) => onChange({ ...data, photoSize: Number(event.target.value) })} /></label>
+    </>}
+  </div>;
+}
+
 export function BlockFields({ block, onChange }: Props) {
   switch (block.type) {
     case 'personal': {
       const d = block.data;
-      return <><TextField label="Nome" value={d.firstName} onChange={(value) => onChange({ ...d, firstName: value })} /><TextField label="Cognome" value={d.lastName} onChange={(value) => onChange({ ...d, lastName: value })} /><TextField label="Titolo professionale" value={d.professionalTitle} onChange={(value) => onChange({ ...d, professionalTitle: value })} /><TextField label="Email" value={d.email} onChange={(value) => onChange({ ...d, email: value })} /><TextField label="Telefono" value={d.phone} onChange={(value) => onChange({ ...d, phone: value })} /><TextField label="Città" value={d.city} onChange={(value) => onChange({ ...d, city: value })} /><TextField label="Paese" value={d.country} onChange={(value) => onChange({ ...d, country: value })} /><TextField label="LinkedIn" value={d.linkedIn} onChange={(value) => onChange({ ...d, linkedIn: value })} /><TextField label="GitHub" value={d.github} onChange={(value) => onChange({ ...d, github: value })} /><TextField label="Sito web" value={d.website} onChange={(value) => onChange({ ...d, website: value })} /><TextArea label="Profilo" value={d.summary} onChange={(value) => onChange({ ...d, summary: value })} /></>;
+      return <><TextField label="Nome" value={d.firstName} onChange={(value) => onChange({ ...d, firstName: value })} /><TextField label="Cognome" value={d.lastName} onChange={(value) => onChange({ ...d, lastName: value })} /><TextField label="Titolo professionale" value={d.professionalTitle} onChange={(value) => onChange({ ...d, professionalTitle: value })} /><ProfilePhotoFields data={d} onChange={onChange} /><TextField label="Email" value={d.email} onChange={(value) => onChange({ ...d, email: value })} /><TextField label="Telefono" value={d.phone} onChange={(value) => onChange({ ...d, phone: value })} /><TextField label="Città" value={d.city} onChange={(value) => onChange({ ...d, city: value })} /><TextField label="Paese" value={d.country} onChange={(value) => onChange({ ...d, country: value })} /><TextField label="LinkedIn" value={d.linkedIn} onChange={(value) => onChange({ ...d, linkedIn: value })} /><TextField label="GitHub" value={d.github} onChange={(value) => onChange({ ...d, github: value })} /><TextField label="Sito web" value={d.website} onChange={(value) => onChange({ ...d, website: value })} /><TextArea label="Profilo" value={d.summary} onChange={(value) => onChange({ ...d, summary: value })} /></>;
     }
     case 'text': return <TextArea label="Testo" value={block.data.text} onChange={(value) => onChange({ ...block.data, text: value })} />;
     case 'heading': {

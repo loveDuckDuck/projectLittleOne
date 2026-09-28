@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { blockCatalog } from '../../models/blockCatalog';
 import type { BlockStyle, CVBlock, GlobalCVStyle } from '../../models/cv';
 import { BlockFields } from './BlockFields';
@@ -10,6 +11,8 @@ interface PropertiesPanelProps {
   selectedBlock: CVBlock | null;
   open: boolean;
   onClose: () => void;
+  collapsed: boolean;
+  onToggle: () => void;
   globalStyle: GlobalCVStyle;
   onDataChange: (data: CVBlock['data']) => void;
   onStyleChange: (style: Partial<BlockStyle>) => void;
@@ -28,22 +31,22 @@ function Color({ label, value, onChange }: { label: string; value: string; onCha
   return <label className="form-field color-field"><span>{label}</span><input type="color" value={value} onChange={(event) => onChange(event.target.value)} /></label>;
 }
 
-export function PropertiesPanel({ selectedBlock, open, onClose, globalStyle, onDataChange, onStyleChange, onGlobalStyleChange, onLoadFontForBlock, onRemoveFont, onDuplicate, onDelete }: PropertiesPanelProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export function PropertiesPanel({ selectedBlock, open, onClose, collapsed, onToggle, globalStyle, onDataChange, onStyleChange, onGlobalStyleChange, onLoadFontForBlock, onRemoveFont, onDuplicate, onDelete }: PropertiesPanelProps) {
   const [fontError, setFontError] = useState('');
   const panelRef = useRef<HTMLElement>(null);
   useEffect(() => { panelRef.current?.scrollTo({ top: 0 }); }, [selectedBlock?.id]);
   const name = blockCatalog.find((item) => item.type === selectedBlock?.type)?.label;
   return (
-    <aside ref={panelRef} className={`side-panel properties-panel ${open ? 'is-open' : ''}`} aria-labelledby="properties-title">
+    <aside ref={panelRef} className={`side-panel properties-panel ${open ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''}`} aria-labelledby="properties-title">
+      <button type="button" className="panel-rail-button" onClick={onToggle} aria-label="Espandi pannello proprietà" aria-expanded={false} title="Espandi pannello proprietà"><ChevronLeft size={18} /><span>Proprietà</span></button>
       <div className="panel-heading">
         <span className="eyebrow">Aspetto e contenuto</span>
         <h2 id="properties-title">Proprietà</h2>
         <p>{selectedBlock ? `Modifica qui il contenuto di ${name}${selectedBlock.type === 'text' || selectedBlock.type === 'heading' ? ', oppure scrivi nel foglio.' : '.'}` : 'Seleziona un riquadro nel foglio oppure cambia lo stile generale del CV.'}</p>
         <button type="button" className="properties-close" onClick={onClose} aria-label="Chiudi pannello proprietà">×</button>
-        <button type="button" className="panel-toggle" onClick={() => setCollapsed(!collapsed)} aria-expanded={!collapsed}>{collapsed ? 'Mostra proprietà' : 'Nascondi proprietà'}</button>
+        <button type="button" className="panel-collapse-button" onClick={onToggle} aria-label="Comprimi pannello proprietà" aria-expanded={true} title="Comprimi pannello proprietà"><ChevronRight size={17} /></button>
       </div>
-      <div className={`panel-body ${collapsed ? 'is-collapsed' : ''}`}>
+      <div className="panel-body">
       {selectedBlock ? <>
         <section className="property-section"><h3>Contenuto</h3><BlockFields block={selectedBlock} onChange={onDataChange} /></section>
         <HeaderProperties block={selectedBlock} onStyleChange={onStyleChange} />

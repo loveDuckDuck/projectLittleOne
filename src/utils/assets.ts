@@ -28,7 +28,7 @@ export async function readFont(file: File): Promise<{ name: string; dataUrl: str
   return { name: file.name, dataUrl };
 }
 
-export async function readImage(file: File): Promise<string> {
+export async function readImage(file: File, maxDimension = 1800): Promise<string> {
   if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) throw new Error('Scegli un’immagine PNG, JPG oppure WebP.');
   if (file.size > 15_000_000) throw new Error('L’immagine deve pesare meno di 15 MB.');
   const objectUrl = URL.createObjectURL(file);
@@ -36,7 +36,7 @@ export async function readImage(file: File): Promise<string> {
     const image = new Image();
     image.src = objectUrl;
     await image.decode();
-    const scale = Math.min(1, 1800 / Math.max(image.naturalWidth, image.naturalHeight));
+    const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
