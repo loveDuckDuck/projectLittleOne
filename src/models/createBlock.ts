@@ -19,6 +19,7 @@ export function createBlock(type: CVBlockType): CVBlock {
     case 'certifications': return { ...base, style: { ...base.style, header: header('Certificazioni', 'award') }, type, data: { title: 'Certificazione', issuer: 'Ente', date: '', url: '' } };
     case 'divider': return { ...base, type, data: { thickness: 1, width: 100 } };
     case 'spacer': return { ...base, type, data: { height: 20 } };
+    case 'image': return { ...base, type, data: { src: '', alt: '', width: 100, height: 0, fit: 'contain' } };
     case 'custom': return { ...base, style: { ...base.style, header: header('Sezione personalizzata', 'book-open') }, type, data: { title: 'Sezione personalizzata', body: 'Scrivi qui il contenuto.' } };
   }
 }

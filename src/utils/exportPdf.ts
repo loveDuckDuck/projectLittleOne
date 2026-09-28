@@ -1,12 +1,15 @@
 import { paginate } from './pagination';
+import { pageBackground } from './color';
 
 export async function exportPdf(): Promise<void> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
   const area = document.getElementById('cv-print-area');
   if (!area) throw new Error('Anteprima del CV non trovata.');
   await document.fonts.ready;
+  await Promise.all(Array.from(area.querySelectorAll('img')).map((image) => image.decode().catch(() => undefined)));
+  const background = getComputedStyle(area).backgroundColor || pageBackground();
   const canvas = await html2canvas(area, {
-    backgroundColor: '#ffffff',
+    backgroundColor: background,
     scale: 2,
     useCORS: true,
     onclone: (clonedDocument) => {
@@ -31,7 +34,7 @@ export async function exportPdf(): Promise<void> {
     slice.height = pageHeight;
     const context = slice.getContext('2d');
     if (!context) throw new Error('Impossibile creare la pagina PDF.');
-    context.fillStyle = '#ffffff';
+    context.fillStyle = background;
     context.fillRect(0, 0, slice.width, slice.height);
     const sourceY = slices[page].start;
     const copyHeight = Math.min(slices[page].end - sourceY, canvas.height - sourceY);

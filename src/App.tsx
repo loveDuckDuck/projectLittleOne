@@ -12,6 +12,7 @@ import { useCVDocument } from './hooks/useCVDocument';
 import { blocksOf, locateBlock, mapBlock, moveBlockTo, moveColumn, placeBlock, removeBlock, resizeColumns, setRowPreset, type DropTarget } from './utils/layout';
 import { downloadProject, parseDocument } from './utils/documentStorage';
 import { exportPdf } from './utils/exportPdf';
+import { CUSTOM_FONT_FAMILY } from './utils/assets';
 
 interface Toast { id: number; message: string; error?: boolean }
 
@@ -102,6 +103,9 @@ export default function App() {
   }
   function updateSelectedStyle(style: Partial<BlockStyle>) { if (selectedBlockId) commit(mapBlock(document, selectedBlockId, (block) => ({ ...block, style: { ...block.style, ...style } }))); }
   function updateGlobalStyle(style: Partial<GlobalCVStyle>) { commit({ ...document, globalStyle: { ...document.globalStyle, ...style } }); }
+  function removeCustomFont() {
+    commit({ ...document, globalStyle: { ...document.globalStyle, customFont: undefined, fontFamily: document.globalStyle.fontFamily === CUSTOM_FONT_FAMILY ? 'Arial' : document.globalStyle.fontFamily }, rows: document.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.map((block) => block.style.fontFamily === CUSTOM_FONT_FAMILY ? { ...block, style: { ...block.style, fontFamily: undefined } } : block) })) })) });
+  }
 
   function targetAt(event: DragMoveEvent | DragEndEvent): DropTarget | null {
     const page = globalThis.document.getElementById('cv-print-area');
@@ -194,7 +198,7 @@ export default function App() {
       <div className="editor-layout">
         {!preview && <BlocksSidebar onAdd={addBlock} />}
         <CVCanvas document={document} selectedBlockId={selectedBlockId} dragId={dragId} dropTarget={dropTarget} preview={preview} onSelectBlock={(id) => { setSelectedBlockId(id); if (id && !['text', 'heading'].includes(allBlocks.find((block) => block.id === id)?.type ?? '')) setPropertiesOpen(true); }} onEditText={updateInlineText} onOpenProperties={() => setPropertiesOpen(true)} onMoveBlock={moveBlock} onDuplicateBlock={duplicateBlock} onDeleteBlock={deleteBlock} onPreset={(id, widths) => commit(setRowPreset(document, id, widths))} onDuplicateRow={duplicateRow} onDeleteRow={deleteRow} onResize={(id, index, width) => commit(resizeColumns(document, id, index, width))} onMoveColumn={(rowId, columnId, direction) => { const row = document.rows.find((item) => item.id === rowId); const index = row?.columns.findIndex((column) => column.id === columnId) ?? -1; const neighbor = row?.columns[index + direction]; if (neighbor) commit(moveColumn(document, rowId, columnId, neighbor.id)); }} onPlaceSelectedBlock={(rowId, columnId) => { if (selectedBlock) commit(moveBlockTo(document, selectedBlock, { kind: 'column', rowId, columnId, index: 0 })); }} />
-        {!preview && <PropertiesPanel selectedBlock={selectedBlock} globalStyle={document.globalStyle} open={propertiesOpen} onClose={() => setPropertiesOpen(false)} onDataChange={updateSelectedData} onStyleChange={updateSelectedStyle} onGlobalStyleChange={updateGlobalStyle} onDuplicate={() => { if (selectedBlockId) duplicateBlock(selectedBlockId); }} onDelete={() => { if (selectedBlockId) deleteBlock(selectedBlockId); }} />}
+        {!preview && <PropertiesPanel selectedBlock={selectedBlock} globalStyle={document.globalStyle} open={propertiesOpen} onClose={() => setPropertiesOpen(false)} onDataChange={updateSelectedData} onStyleChange={updateSelectedStyle} onGlobalStyleChange={updateGlobalStyle} onRemoveFont={removeCustomFont} onDuplicate={() => { if (selectedBlockId) duplicateBlock(selectedBlockId); }} onDelete={() => { if (selectedBlockId) deleteBlock(selectedBlockId); }} />}
       </div>
       <DragOverlay>{activeBlock ? <div className="drag-overlay-block"><BlockPreview block={activeBlock} /></div> : dragId?.startsWith('column:') ? <div className="drag-overlay">Colonna · rilascia su un'altra colonna della riga</div> : dragId?.startsWith('row:') ? <div className="drag-overlay">⠿ Riga completa</div> : dragId?.startsWith('palette:') ? <div className="drag-overlay">{blockCatalog.find((item) => item.type === dragId.slice(8))?.label}</div> : null}</DragOverlay>
     </DndContext>

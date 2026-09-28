@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CVBlock } from '../../models/cv';
+import type { CVBlock, CVBlockDataMap } from '../../models/cv';
+import { readImage } from '../../utils/assets';
 
 interface Props {
   block: CVBlock;
@@ -31,6 +32,19 @@ function StructuredLines({ label, value, onCommit }: { label: string; value: str
 
 function StringList({ label, items, onChange }: { label: string; items: string[]; onChange: (value: string[]) => void }) {
   return <div className="list-field"><span className="field-label">{label}</span>{items.map((item, index) => <div className="list-field-row" key={index}><input aria-label={`${label} ${index + 1}`} value={item} onChange={(event) => onChange(items.map((current, i) => i === index ? event.target.value : current))} /><button type="button" aria-label={`Sposta punto ${index + 1} sopra`} disabled={index === 0} onClick={() => { const next = [...items]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; onChange(next); }}>↑</button><button type="button" aria-label={`Sposta punto ${index + 1} sotto`} disabled={index === items.length - 1} onClick={() => { const next = [...items]; [next[index + 1], next[index]] = [next[index], next[index + 1]]; onChange(next); }}>↓</button><button type="button" aria-label={`Rimuovi punto ${index + 1}`} onClick={() => onChange(items.filter((_, i) => i !== index))}>×</button></div>)}<button type="button" className="text-action" onClick={() => onChange([...items, ''])}>+ Aggiungi punto</button></div>;
+}
+
+function ImageFields({ data, onChange }: { data: CVBlockDataMap['image']; onChange: (data: CVBlockDataMap['image']) => void }) {
+  const [error, setError] = useState('');
+  return <>
+    <label className="form-field"><span>Carica immagine (PNG, JPG, WebP)</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={async (event) => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { const src = await readImage(file); onChange({ ...data, src, alt: data.alt || file.name.replace(/\.[^.]+$/, '') }); setError(''); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Immagine non valida.'); } }} /></label>
+    {error && <p className="field-error" role="alert">{error}</p>}
+    {data.src && <><img className="image-field-preview" src={data.src} alt="Anteprima immagine caricata" /><button type="button" className="text-action" onClick={() => onChange({ ...data, src: '' })}>Rimuovi immagine</button></>}
+    <TextField label="Descrizione alternativa" value={data.alt} onChange={(alt) => onChange({ ...data, alt })} />
+    <NumberField label="Larghezza (%)" value={data.width} min={5} max={100} onChange={(width) => onChange({ ...data, width })} />
+    <NumberField label="Altezza (px, 0 = automatica)" value={data.height} min={0} max={1000} onChange={(height) => onChange({ ...data, height })} />
+    {data.height > 0 && <label className="form-field"><span>Adattamento</span><select value={data.fit} onChange={(event) => onChange({ ...data, fit: event.target.value as typeof data.fit })}><option value="contain">Mostra tutta</option><option value="cover">Riempi e ritaglia</option></select></label>}
+  </>;
 }
 
 export function BlockFields({ block, onChange }: Props) {
@@ -75,6 +89,7 @@ export function BlockFields({ block, onChange }: Props) {
     }
     case 'divider': return <><NumberField label="Spessore (px)" value={block.data.thickness} min={1} max={12} onChange={(value) => onChange({ ...block.data, thickness: value })} /><NumberField label="Larghezza (%)" value={block.data.width} min={10} max={100} onChange={(value) => onChange({ ...block.data, width: value })} /></>;
     case 'spacer': return <NumberField label="Altezza (px)" value={block.data.height} min={4} max={200} onChange={(value) => onChange({ ...block.data, height: value })} />;
+    case 'image': return <ImageFields data={block.data} onChange={onChange} />;
     case 'custom': return <>{!block.style.header && <TextField label="Titolo" value={block.data.title} onChange={(value) => onChange({ ...block.data, title: value })} />}<TextArea label="Contenuto" value={block.data.body} onChange={(value) => onChange({ ...block.data, body: value })} /></>;
   }
 }

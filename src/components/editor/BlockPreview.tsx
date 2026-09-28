@@ -1,11 +1,14 @@
 import type { CSSProperties } from 'react';
 import type { CVBlock } from '../../models/cv';
 import { cvIcons } from '../../utils/icons';
+import { colorWithOpacity } from '../../utils/color';
+import { backgroundImageStyle } from '../../utils/background';
 
 interface BlockPreviewProps {
   block: CVBlock;
   editable?: boolean;
   onEditText?: (value: string) => void;
+  backgroundOnParent?: boolean;
 }
 
 function formatMonth(value: string): string {
@@ -57,12 +60,14 @@ function content(block: CVBlock, editable = false, onEditText?: (value: string) 
       return <hr style={{ borderTopWidth: block.data.thickness, width: `${block.data.width}%` }} />;
     case 'spacer':
       return <div style={{ height: block.data.height }} aria-hidden="true" />;
+    case 'image':
+      return block.data.src ? <img className="cv-image" src={block.data.src} alt={block.data.alt} style={{ width: `${block.data.width}%`, height: block.data.height || 'auto', objectFit: block.data.fit }} /> : <div className="cv-image-placeholder">Seleziona il blocco e carica un’immagine</div>;
     case 'custom':
       return <section className="cv-entry">{!block.style.header && <h3>{block.data.title}</h3>}<p>{block.data.body}</p></section>;
   }
 }
 
-export function BlockPreview({ block, editable = false, onEditText }: BlockPreviewProps) {
+export function BlockPreview({ block, editable = false, onEditText, backgroundOnParent = false }: BlockPreviewProps) {
   const header = block.style.header;
   const Icon = header?.showIcon && header.icon ? cvIcons[header.icon] : undefined;
   const style: CSSProperties = {
@@ -73,11 +78,15 @@ export function BlockPreview({ block, editable = false, onEditText }: BlockPrevi
     marginTop: block.style.marginTop ? `${block.style.marginTop}px` : undefined,
     marginBottom: block.style.marginBottom ? `${block.style.marginBottom}px` : undefined,
     color: block.style.textColor,
+    fontFamily: block.style.fontFamily,
+    backgroundColor: !backgroundOnParent && block.style.backgroundColor ? colorWithOpacity(block.style.backgroundColor, block.style.backgroundOpacity) : undefined,
+    padding: !backgroundOnParent && (block.style.backgroundColor || block.style.backgroundImage) ? '8px' : undefined,
     '--block-accent': block.style.accentColor,
   } as CSSProperties;
 
   return (
     <div className="cv-block" style={style}>
+      {!backgroundOnParent && block.style.backgroundImage && <span className="block-background-image" aria-hidden="true" style={{ ...backgroundImageStyle(block.style.backgroundImage, block.style.backgroundMode), opacity: (block.style.backgroundOpacity ?? 100) / 100 }} />}
       {header && header.title && <div className={`cv-section-header ${header.bottomBorder ? 'has-border' : ''} ${header.dividerLine ? 'has-divider' : ''}`} style={{ fontSize: `${header.fontSize}pt`, fontWeight: header.fontWeight, textTransform: header.textTransform, textAlign: header.textAlign, color: header.color ?? block.style.accentColor ?? 'var(--cv-accent)', backgroundColor: header.backgroundColor, marginTop: header.spacingAbove, marginBottom: header.spacingBelow, '--icon-gap': `${header.iconGap}px` } as CSSProperties}>
         <span className={`cv-section-header-content icon-${header.iconPosition}`}>{Icon && <Icon aria-hidden="true" size={header.iconSize} strokeWidth={1.8} color={header.iconColor ?? header.color ?? block.style.accentColor ?? 'var(--cv-accent)'} />}<span>{header.title}</span></span>
       </div>}

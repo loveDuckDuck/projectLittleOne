@@ -12,7 +12,10 @@ export type CVBlockType =
   | 'certifications'
   | 'divider'
   | 'spacer'
+  | 'image'
   | 'custom';
+
+export type BackgroundMode = 'cover' | 'contain' | 'stretch' | 'tile' | 'center' | 'span';
 
 export interface BlockStyle {
   fontSize?: number;
@@ -23,6 +26,11 @@ export interface BlockStyle {
   marginBottom?: number;
   textColor?: string;
   accentColor?: string;
+  fontFamily?: string;
+  backgroundColor?: string;
+  backgroundOpacity?: number;
+  backgroundImage?: string;
+  backgroundMode?: BackgroundMode;
   header?: BlockHeaderStyle;
 }
 
@@ -101,6 +109,7 @@ export interface CVBlockDataMap {
   certifications: { title: string; issuer: string; date: string; url: string };
   divider: { thickness: number; width: number };
   spacer: { height: number };
+  image: { src: string; alt: string; width: number; height: number; fit: 'contain' | 'cover' };
   custom: { title: string; body: string };
 }
 
@@ -114,9 +123,14 @@ export type CVBlock = {
 }[CVBlockType];
 
 export interface GlobalCVStyle {
-  fontFamily: 'Arial' | 'Helvetica' | 'Georgia' | 'Times New Roman' | 'Verdana';
+  fontFamily: string;
+  customFont?: { name: string; dataUrl: string };
   textColor: string;
   accentColor: string;
+  backgroundColor?: string;
+  backgroundOpacity?: number;
+  backgroundImage?: string;
+  backgroundMode?: BackgroundMode;
   baseFontSize: number;
   pageMargin: number;
   sectionSpacing: number;
