@@ -79,7 +79,7 @@ export const initialDocument: { version: 1; globalStyle: GlobalCVStyle; blocks: 
     {
       id: 'sample-skills',
       type: 'skills',
-      data: { layout: 'inline', items: ['Product design', 'UX research', 'Prototipazione', 'Design system', 'Figma'], groups: [] },
+      data: { layout: 'rated', items: ['Product design', 'UX research', 'Prototipazione', 'Design system', 'Figma'], ratings: [4.5, 4, 4.25, 4.5, 5], columns: 2, groups: [] },
       style: {},
     },
   ],

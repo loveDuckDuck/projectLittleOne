@@ -16,6 +16,18 @@ export const locateBlock = (document: CVDocument, id: string) => {
   return null;
 };
 
+export function sideColumnLayout(row: CVRow, columnId: string, side: 'left' | 'right') {
+  const columnIndex = row.columns.findIndex((column) => column.id === columnId);
+  if (columnIndex < 0 || row.columns.length >= 3) return null;
+  const widths = row.columns.map((column) => column.width);
+  const sharedWidth = row.columns.length === 1 ? 100 : Math.max(40, widths[columnIndex]);
+  if (row.columns.length === 2) widths[1 - columnIndex] = 100 - sharedWidth;
+  widths[columnIndex] = Math.floor(sharedWidth / 2);
+  const insertionIndex = columnIndex + (side === 'right' ? 1 : 0);
+  widths.splice(insertionIndex, 0, sharedWidth - Math.floor(sharedWidth / 2));
+  return { widths, insertionIndex };
+}
+
 export function mapBlock(document: CVDocument, id: string, update: (block: CVBlock) => CVBlock): CVDocument {
   return { ...document, rows: document.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.map((block) => block.id === id ? update(block) : block) })) })) };
 }
@@ -43,17 +55,11 @@ export function placeBlock(document: CVDocument, block: CVBlock, target: DropTar
     if (!column) return document;
     column.blocks.splice(Math.max(0, Math.min(target.index, column.blocks.length)), 0, block);
   } else {
-    const columnIndex = row.columns.findIndex((item) => item.id === target.columnId);
-    if (columnIndex < 0 || row.columns.length >= 3) return document;
-    const selectedColumn = row.columns[columnIndex];
-    const sharedWidth = row.columns.length === 1 ? 100 : Math.max(40, selectedColumn.width);
-    if (row.columns.length === 2) {
-      const neighbor = row.columns[1 - columnIndex];
-      neighbor.width = 100 - sharedWidth;
-    }
-    selectedColumn.width = Math.floor(sharedWidth / 2);
-    const newColumn: CVColumn = { id: crypto.randomUUID(), width: sharedWidth - selectedColumn.width, blocks: [block] };
-    row.columns.splice(columnIndex + (target.side === 'right' ? 1 : 0), 0, newColumn);
+    const layout = sideColumnLayout(row, target.columnId, target.side);
+    if (!layout) return document;
+    const newColumn: CVColumn = { id: crypto.randomUUID(), width: layout.widths[layout.insertionIndex], blocks: [block] };
+    row.columns.splice(layout.insertionIndex, 0, newColumn);
+    row.columns.forEach((column, index) => { column.width = layout.widths[index]; });
   }
   return { ...document, rows };
 }

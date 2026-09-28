@@ -3,6 +3,7 @@ import type { CVBlock } from '../../models/cv';
 import { cvIcons } from '../../utils/icons';
 import { colorWithOpacity } from '../../utils/color';
 import { backgroundImageStyle } from '../../utils/background';
+import { RatingDots } from './RatingDots';
 
 interface BlockPreviewProps {
   block: CVBlock;
@@ -43,15 +44,23 @@ function content(block: CVBlock, editable = false, onEditText?: (value: string) 
     }
     case 'bulletList':
       return <ul className={`cv-list marker-${block.data.marker}`}>{block.data.items.map((item, index) => <li key={index}>{item}</li>)}</ul>;
-    case 'skills':
-      return block.data.layout === 'grouped'
-        ? <div className="cv-skills-groups">{block.data.groups.map((group, index) => <p key={index}><strong>{group.name}</strong> {group.items.join(' · ')}</p>)}</div>
-        : block.data.layout === 'list' ? <ul className="cv-list">{block.data.items.map((item, index) => <li key={index}>{item}</li>)}</ul>
-          : <p className="cv-skills">{block.data.items.join('  ·  ')}</p>;
+    case 'skills': {
+      const d = block.data;
+      if (d.layout === 'grouped') return <div className="cv-skills-groups">{d.groups.map((group, index) => <p key={index}><strong>{group.name}</strong> {group.items.join(' · ')}</p>)}</div>;
+      if (d.layout === 'rated') return <div className="cv-skills-grid" style={{ gridTemplateColumns: `repeat(${d.columns}, minmax(0, 1fr))` }}>{d.items.map((item, index) => item && <div className="cv-skill-rated" key={index}><span>{item}</span><RatingDots value={d.ratings[index] ?? 3} /></div>)}</div>;
+      if (d.layout === 'list') return <ul className="cv-list cv-skills-grid" style={{ gridTemplateColumns: `repeat(${d.columns}, minmax(0, 1fr))` }}>{d.items.filter(Boolean).map((item, index) => <li key={index}>{item}</li>)}</ul>;
+      return <p className="cv-skills">{d.items.filter(Boolean).join('  ·  ')}</p>;
+    }
     case 'hobbies':
       return <section className="cv-hobbies">{!block.style.header && <h2 className="cv-heading is-uppercase has-accent-line">Hobby</h2>}{block.data.items.some(Boolean) && <p>{block.data.items.filter(Boolean).join('  ·  ')}</p>}</section>;
-    case 'languages':
-      return <p>{block.data.items.map((item) => `${item.language} (${item.proficiency})`).join('  ·  ')}</p>;
+    case 'languages': {
+      const items = block.data.items.filter((item) => item.language);
+      return items.length > 0 && <table className="cv-languages-table">
+        <colgroup><col className="cv-language-name-column" /><col /><col /></colgroup>
+        <thead><tr><th scope="col"><span className="visually-hidden">Lingua</span></th><th scope="col">Parlato</th><th scope="col">Scritto</th></tr></thead>
+        <tbody>{items.map((item, index) => <tr key={index}><th scope="row">{item.language}</th><td>{item.spoken || '—'}</td><td>{item.written || '—'}</td></tr>)}</tbody>
+      </table>;
+    }
     case 'projects':
       return <section className="cv-entry"><div className="cv-entry-top"><h3>{block.data.title}</h3><span>{block.data.dates}</span></div>{block.data.role && <p className="cv-entry-meta">{block.data.role}</p>}{block.data.description && <p>{block.data.description}</p>}{block.data.url && <p className="cv-entry-link">{block.data.url}</p>}{block.data.bullets.length > 0 && <ul>{block.data.bullets.map((item, index) => <li key={index}>{item}</li>)}</ul>}</section>;
     case 'certifications':
@@ -63,7 +72,7 @@ function content(block: CVBlock, editable = false, onEditText?: (value: string) 
     case 'image':
       return block.data.src ? <img className="cv-image" src={block.data.src} alt={block.data.alt} style={{ width: `${block.data.width}%`, height: block.data.height || 'auto', objectFit: block.data.fit }} /> : <div className="cv-image-placeholder">Seleziona il blocco e carica un’immagine</div>;
     case 'custom':
-      return <section className="cv-entry">{!block.style.header && <h3>{block.data.title}</h3>}<p>{block.data.body}</p></section>;
+      return <section className="cv-entry">{!block.style.header && <h3>{block.data.title}</h3>}{block.data.body && <p>{block.data.body}</p>}{block.data.bullets.filter(Boolean).length > 0 && <ul>{block.data.bullets.filter(Boolean).map((item, index) => <li key={index}>{item}</li>)}</ul>}</section>;
   }
 }
 

@@ -25,9 +25,9 @@ export function Toolbar({ blockCount, saveStatus, preview, canUndo, canRedo, exp
       <div className="toolbar-brand"><span className="brand-mark" aria-hidden="true">CV</span><div><strong>CV Builder</strong><span>Beta {packageInfo.version}</span></div></div>
       <div className="toolbar-document"><span className={`document-dot ${saveStatus}`} aria-hidden="true" />Il mio curriculum<span className="toolbar-count">{blockCount} blocchi · {saveStatus === 'saved' ? 'Salvato' : saveStatus === 'saving' ? 'Salvataggio...' : 'Errore salvataggio'}</span></div>
       <div className="toolbar-actions">
-        {preview ? <><button type="button" onClick={() => onPreviewChange(false)}>Torna all'editor</button><button type="button" className="button-primary" onClick={onExportPdf} disabled={exporting}>{exporting ? 'Esportazione...' : 'Esporta PDF'}</button></> : <>
+        {preview ? <><button type="button" title="Esci dall’anteprima (Esc)" onClick={() => onPreviewChange(false)}>Torna all'editor <span className="shortcut-hint">Esc</span></button><button type="button" className="button-primary" onClick={onExportPdf} disabled={exporting}>{exporting ? 'Esportazione...' : 'Esporta PDF'}</button></> : <>
         <button type="button" onClick={() => setShowNewDialog(true)}>Nuovo CV</button>
-        <button type="button" onClick={() => onPreviewChange(!preview)}>{preview ? 'Modifica' : 'Anteprima'}</button>
+        <button type="button" title="Attiva/disattiva anteprima (Ctrl+A)" onClick={() => onPreviewChange(!preview)}>Anteprima <span className="shortcut-hint">Ctrl+A</span></button>
         <span className="toolbar-separator" aria-hidden="true" />
         <button type="button" onClick={onUndo} disabled={!canUndo} title="Annulla (Ctrl+Z)">↶ <span>Annulla</span></button>
         <button type="button" onClick={onRedo} disabled={!canRedo} title="Ripristina (Ctrl+Shift+Z)">↷ <span>Ripristina</span></button>

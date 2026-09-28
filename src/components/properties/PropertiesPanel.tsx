@@ -14,6 +14,7 @@ interface PropertiesPanelProps {
   onDataChange: (data: CVBlock['data']) => void;
   onStyleChange: (style: Partial<BlockStyle>) => void;
   onGlobalStyleChange: (style: Partial<GlobalCVStyle>) => void;
+  onLoadFontForBlock: (font: { name: string; dataUrl: string }) => void;
   onRemoveFont: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -27,7 +28,7 @@ function Color({ label, value, onChange }: { label: string; value: string; onCha
   return <label className="form-field color-field"><span>{label}</span><input type="color" value={value} onChange={(event) => onChange(event.target.value)} /></label>;
 }
 
-export function PropertiesPanel({ selectedBlock, open, onClose, globalStyle, onDataChange, onStyleChange, onGlobalStyleChange, onRemoveFont, onDuplicate, onDelete }: PropertiesPanelProps) {
+export function PropertiesPanel({ selectedBlock, open, onClose, globalStyle, onDataChange, onStyleChange, onGlobalStyleChange, onLoadFontForBlock, onRemoveFont, onDuplicate, onDelete }: PropertiesPanelProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [fontError, setFontError] = useState('');
   const panelRef = useRef<HTMLElement>(null);
@@ -48,6 +49,8 @@ export function PropertiesPanel({ selectedBlock, open, onClose, globalStyle, onD
         <HeaderProperties block={selectedBlock} onStyleChange={onStyleChange} />
         <section className="property-section"><h3>Tipografia</h3>
           <label className="form-field"><span>Font del blocco</span><select value={selectedBlock.style.fontFamily ?? ''} onChange={(event) => onStyleChange({ fontFamily: event.target.value || undefined })}><option value="">Usa il font del CV</option>{STANDARD_FONTS.map((font) => <option key={font} value={font}>{font}</option>)}{globalStyle.customFont && <option value={CUSTOM_FONT_FAMILY}>{globalStyle.customFont.name}</option>}</select></label>
+          <label className="form-field"><span>Carica un font per questo blocco (WOFF2, WOFF, TTF, OTF)</span><input type="file" accept=".woff2,.woff,.ttf,.otf" onChange={async (event) => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { onLoadFontForBlock(await readFont(file)); setFontError(''); } catch (error) { setFontError(error instanceof Error ? error.message : 'Font non valido.'); } }} /></label>
+          {fontError && <p className="field-error" role="alert">{fontError}</p>}
           <Numeric label="Dimensione (pt)" value={selectedBlock.style.fontSize ?? globalStyle.baseFontSize} min={6} max={36} onChange={(fontSize) => onStyleChange({ fontSize })} />
           <label className="form-field"><span>Peso</span><select value={selectedBlock.style.fontWeight ?? 400} onChange={(event) => onStyleChange({ fontWeight: Number(event.target.value) as BlockStyle['fontWeight'] })}><option value={400}>Normale</option><option value={500}>Medio</option><option value={600}>Semibold</option><option value={700}>Grassetto</option></select></label>
           <label className="form-field"><span>Allineamento</span><select value={selectedBlock.style.textAlign ?? 'left'} onChange={(event) => onStyleChange({ textAlign: event.target.value as BlockStyle['textAlign'] })}><option value="left">Sinistra</option><option value="center">Centro</option><option value="right">Destra</option></select></label>

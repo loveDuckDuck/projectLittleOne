@@ -24,16 +24,36 @@ function matchesShape(value: unknown, example: unknown): boolean {
   return typeof value === typeof example;
 }
 
+function normalizedBlockData(type: CVBlockType, value: unknown): unknown {
+  if (!isRecord(value)) return value;
+  if (type === 'custom' && !('bullets' in value)) return { ...value, bullets: [] };
+  if (type === 'skills') return {
+    ...value,
+    ratings: 'ratings' in value ? value.ratings : Array.isArray(value.items) ? value.items.map(() => 3) : undefined,
+    columns: 'columns' in value ? value.columns : 2,
+  };
+  if (type === 'languages' && Array.isArray(value.items)) return {
+    ...value,
+    items: value.items.map((item: unknown) => isRecord(item) ? {
+      language: item.language,
+      spoken: 'spoken' in item ? item.spoken : item.proficiency,
+      written: 'written' in item ? item.written : item.proficiency,
+    } : item),
+  };
+  return value;
+}
+
 function validBlock(value: unknown): value is CVBlock {
   if (!isRecord(value) || typeof value.id !== 'string' || !value.id || !blockTypes.includes(value.type as CVBlockType)) return false;
   const style = value.style;
   if (!isRecord(style)) return false;
   const example = createBlock(value.type as CVBlockType);
-  if (!matchesShape(value.data, example.data)) return false;
-  const data = value.data as Record<string, unknown>;
+  const shapedData = normalizedBlockData(value.type as CVBlockType, value.data);
+  if (!matchesShape(shapedData, example.data)) return false;
+  const data = shapedData as Record<string, unknown>;
   if (value.type === 'heading' && (![1, 2, 3].includes(data.level as number))) return false;
   if (value.type === 'bulletList' && !['disc', 'circle', 'square'].includes(String(data.marker))) return false;
-  if (value.type === 'skills' && !['list', 'inline', 'grouped'].includes(String(data.layout))) return false;
+  if (value.type === 'skills' && (!['list', 'inline', 'grouped', 'rated'].includes(String(data.layout)) || ![1, 2, 3].includes(data.columns as number) || (data.ratings as number[]).length !== (data.items as string[]).length || (data.ratings as number[]).some((rating) => !Number.isFinite(rating) || rating < 0 || rating > 5 || rating * 4 !== Math.round(rating * 4)))) return false;
   if (value.type === 'divider' && ((data.thickness as number) < 1 || (data.width as number) < 1 || (data.width as number) > 100)) return false;
   if (value.type === 'spacer' && ((data.height as number) < 0 || (data.height as number) > 1000)) return false;
   if (value.type === 'image' && (typeof data.src !== 'string' || (data.src !== '' && (data.src.length > 2_700_000 || !IMAGE_DATA_URL.test(data.src))) || (data.width as number) < 5 || (data.width as number) > 100 || (data.height as number) < 0 || (data.height as number) > 1000 || !['contain', 'cover'].includes(String(data.fit)))) return false;
@@ -91,7 +111,8 @@ export function parseDocument(value: unknown): CVDocument {
   if (blocks.length > 500 || new Set(ids).size !== ids.length) {
     throw new Error('Uno o più blocchi del progetto non sono validi.');
   }
-  return { version: 2, globalStyle: value.globalStyle as unknown as CVDocument['globalStyle'], rows: rows as CVDocument['rows'] };
+  const normalizedRows = (rows as CVDocument['rows']).map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.map((block) => ({ ...block, data: normalizedBlockData(block.type, block.data) } as CVBlock)) })) }));
+  return { version: 2, globalStyle: value.globalStyle as unknown as CVDocument['globalStyle'], rows: normalizedRows };
 }
 
 export function loadSavedDocument(): CVDocument {

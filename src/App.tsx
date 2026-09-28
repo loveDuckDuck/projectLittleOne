@@ -15,6 +15,10 @@ import { exportPdf } from './utils/exportPdf';
 import { CUSTOM_FONT_FAMILY } from './utils/assets';
 
 interface Toast { id: number; message: string; error?: boolean }
+interface DragGeometry {
+  page: { left: number; top: number; right: number; bottom: number };
+  rows: { id: string; top: number; bottom: number; columns: { id: string; left: number; right: number; blocks: { top: number; bottom: number }[] }[] }[];
+}
 
 export default function App() {
   const { document, canUndo, canRedo, saveStatus, commit, replace, undo, redo } = useCVDocument();
@@ -26,6 +30,7 @@ export default function App() {
   const [toast, setToast] = useState<Toast | null>(null);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
   const lastSaveStatus = useRef(saveStatus);
+  const dragGeometry = useRef<DragGeometry | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor, { coordinateGetter: defaultKeyboardCoordinateGetter }));
   const allBlocks = blocksOf(document);
   const selectedBlock = allBlocks.find((block) => block.id === selectedBlockId) ?? null;
@@ -44,14 +49,27 @@ export default function App() {
   }, [toast]);
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if ((event.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      const target = event.target as HTMLElement | null;
+      if (event.key === 'Escape' && preview) {
+        event.preventDefault();
+        setPreview(false);
+        setSelectedBlockId(null);
+        return;
+      }
+      if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'a') {
+        event.preventDefault();
+        setPreview((current) => !current);
+        setSelectedBlockId(null);
+        return;
+      }
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') return;
       event.preventDefault();
       if (event.shiftKey) redo(); else undo();
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [undo, redo]);
+  }, [undo, redo, preview]);
 
   function addBlock(type: CVBlockType, target?: DropTarget | null) {
     const block = createBlock(type);
@@ -103,6 +121,10 @@ export default function App() {
   }
   function updateSelectedStyle(style: Partial<BlockStyle>) { if (selectedBlockId) commit(mapBlock(document, selectedBlockId, (block) => ({ ...block, style: { ...block.style, ...style } }))); }
   function updateGlobalStyle(style: Partial<GlobalCVStyle>) { commit({ ...document, globalStyle: { ...document.globalStyle, ...style } }); }
+  function loadFontForSelectedBlock(font: { name: string; dataUrl: string }) {
+    if (!selectedBlockId) return;
+    commit({ ...document, globalStyle: { ...document.globalStyle, customFont: font }, rows: document.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.map((block) => block.id === selectedBlockId ? { ...block, style: { ...block.style, fontFamily: CUSTOM_FONT_FAMILY } } as CVBlock : block) })) })) });
+  }
   function removeCustomFont() {
     commit({ ...document, globalStyle: { ...document.globalStyle, customFont: undefined, fontFamily: document.globalStyle.fontFamily === CUSTOM_FONT_FAMILY ? 'Arial' : document.globalStyle.fontFamily }, rows: document.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.map((block) => block.style.fontFamily === CUSTOM_FONT_FAMILY ? { ...block, style: { ...block.style, fontFamily: undefined } } : block) })) })) });
   }
@@ -110,47 +132,64 @@ export default function App() {
   function targetAt(event: DragMoveEvent | DragEndEvent): DropTarget | null {
     const page = globalThis.document.getElementById('cv-print-area');
     if (!page || !(event.activatorEvent instanceof MouseEvent)) return null;
-    const x = event.activatorEvent.clientX + event.delta.x;
-    const y = event.activatorEvent.clientY + event.delta.y;
+    const geometry = dragGeometry.current;
+    if (!geometry) return null;
     const pageRect = page.getBoundingClientRect();
-    if (x < pageRect.left || x > pageRect.right || y < pageRect.top || y > pageRect.bottom) return null;
-    const rows = Array.from(page.querySelectorAll<HTMLElement>('.cv-row'));
+    const x = event.activatorEvent.clientX + event.delta.x - (pageRect.left - geometry.page.left);
+    const y = event.activatorEvent.clientY + event.delta.y - (pageRect.top - geometry.page.top);
+    if (x < geometry.page.left || x > geometry.page.right || y < geometry.page.top || y > geometry.page.bottom) return null;
+    const rows = geometry.rows;
     if (!rows.length) return null;
     const activeId = String(event.active.id);
     if (activeId.startsWith('column:')) {
       const [, sourceRowId, sourceColumnId] = activeId.split(':');
-      const sourceRow = rows.find((item) => item.dataset.rowId === sourceRowId);
+      const sourceRow = rows.find((item) => item.id === sourceRowId);
       if (!sourceRow) return null;
-      const rect = sourceRow.getBoundingClientRect();
-      if (y < rect.top - 24 || y > rect.bottom + 12) return null;
-      const columns = Array.from(sourceRow.querySelectorAll<HTMLElement>('.cv-column'));
-      const column = columns.find((item) => x < item.getBoundingClientRect().right) ?? columns[columns.length - 1];
-      if (!column?.dataset.columnId || column.dataset.columnId === sourceColumnId) return null;
-      return { kind: 'column', rowId: sourceRowId, columnId: column.dataset.columnId, index: 0 };
+      if (y < sourceRow.top - 24 || y > sourceRow.bottom + 12) return null;
+      const column = sourceRow.columns.find((item) => x < item.right) ?? sourceRow.columns[sourceRow.columns.length - 1];
+      if (!column || column.id === sourceColumnId) return null;
+      return { kind: 'column', rowId: sourceRowId, columnId: column.id, index: 0 };
     }
-    let row = rows.find((item) => y < item.getBoundingClientRect().bottom) ?? rows[rows.length - 1];
-    const rowRect = row.getBoundingClientRect();
-    const rowId = row.dataset.rowId!;
-    if (y < rowRect.top + Math.min(12, rowRect.height * .12)) return { kind: 'row', rowId, side: 'above' };
-    if (y > rowRect.bottom - Math.min(12, rowRect.height * .12)) return { kind: 'row', rowId, side: 'below' };
-    const columns = Array.from(row.querySelectorAll<HTMLElement>('.cv-column'));
-    const column = columns.find((item) => x < item.getBoundingClientRect().right) ?? columns[columns.length - 1];
+    const row = rows.reduce((closest, item) => {
+      const distance = y < item.top ? item.top - y : y > item.bottom ? y - item.bottom : 0;
+      const closestDistance = y < closest.top ? closest.top - y : y > closest.bottom ? y - closest.bottom : 0;
+      return distance < closestDistance ? item : closest;
+    });
+    const rowId = row.id;
+    if (activeId.startsWith('row:')) return { kind: 'row', rowId, side: y < (row.top + row.bottom) / 2 ? 'above' : 'below' };
+    const column = row.columns.find((item) => x < item.right) ?? row.columns[row.columns.length - 1];
     if (!column) return { kind: 'row', rowId, side: 'below' };
-    const columnId = column.dataset.columnId!;
-    const blocks = Array.from(column.querySelectorAll<HTMLElement>('.canvas-block'));
-    const columnRect = column.getBoundingClientRect();
-    const zoom = Number.parseFloat(getComputedStyle(page).zoom) || 1;
-    const sideZone = Math.min(72 * zoom, columnRect.width * .22);
-    if (columns.length < 3 && blocks.length && x < columnRect.left + sideZone) return { kind: 'side', rowId, columnId, side: 'left' };
-    if (columns.length < 3 && blocks.length && x > columnRect.right - sideZone) return { kind: 'side', rowId, columnId, side: 'right' };
-    const index = blocks.findIndex((block) => y < block.getBoundingClientRect().top + block.getBoundingClientRect().height / 2);
-    return { kind: 'column', rowId, columnId, index: index < 0 ? blocks.length : index };
+    const columnMidpoint = (column.left + column.right) / 2;
+    if (row.columns.length < 3 && column.blocks.length && y >= row.top - 18 && y <= row.bottom + 18) {
+      if (x < columnMidpoint) return { kind: 'side', rowId, columnId: column.id, side: 'left' };
+      return { kind: 'side', rowId, columnId: column.id, side: 'right' };
+    }
+    const edgeZone = Math.min(12, (row.bottom - row.top) * .12);
+    if (y < row.top + edgeZone) return { kind: 'row', rowId, side: 'above' };
+    if (y > row.bottom - edgeZone) return { kind: 'row', rowId, side: 'below' };
+    const index = column.blocks.findIndex((block) => y < (block.top + block.bottom) / 2);
+    return { kind: 'column', rowId, columnId: column.id, index: index < 0 ? column.blocks.length : index };
   }
-  function onDragStart(event: DragStartEvent) { setDragId(String(event.active.id)); setDropTarget(null); }
+  function onDragStart(event: DragStartEvent) {
+    const page = globalThis.document.getElementById('cv-print-area');
+    const pageRect = page?.getBoundingClientRect();
+    dragGeometry.current = page && pageRect ? {
+      page: { left: pageRect.left, top: pageRect.top, right: pageRect.right, bottom: pageRect.bottom },
+      rows: Array.from(page.querySelectorAll<HTMLElement>('.cv-row')).map((row) => {
+        const rect = row.getBoundingClientRect();
+        return { id: row.dataset.rowId!, top: rect.top, bottom: rect.bottom, columns: Array.from(row.querySelectorAll<HTMLElement>('.cv-column')).map((column) => {
+          const bounds = column.getBoundingClientRect();
+          return { id: column.dataset.columnId!, left: bounds.left, right: bounds.right, blocks: Array.from(column.querySelectorAll<HTMLElement>('.canvas-block')).map((block) => { const blockRect = block.getBoundingClientRect(); return { top: blockRect.top, bottom: blockRect.bottom }; }) };
+        }) };
+      }),
+    } : null;
+    setDragId(String(event.active.id)); setDropTarget(null);
+  }
   function onDragMove(event: DragMoveEvent) { setDropTarget(targetAt(event)); }
   function onDragEnd(event: DragEndEvent) {
     const id = String(event.active.id);
     const target = event.activatorEvent instanceof MouseEvent ? targetAt(event) : dropTarget;
+    dragGeometry.current = null;
     setDragId(null); setDropTarget(null);
     if (id.startsWith('column:')) {
       const [, rowId, columnId] = id.split(':');
@@ -194,11 +233,11 @@ export default function App() {
   }
   return <div className={`app-shell ${preview ? 'preview-mode' : ''}`}>
     <Toolbar blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto esportato'); }} onImportProject={importProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify('Nuovo CV creato'); }} />
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => { setDragId(null); setDropTarget(null); }}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => { dragGeometry.current = null; setDragId(null); setDropTarget(null); }}>
       <div className="editor-layout">
         {!preview && <BlocksSidebar onAdd={addBlock} />}
         <CVCanvas document={document} selectedBlockId={selectedBlockId} dragId={dragId} dropTarget={dropTarget} preview={preview} onSelectBlock={(id) => { setSelectedBlockId(id); if (id && !['text', 'heading'].includes(allBlocks.find((block) => block.id === id)?.type ?? '')) setPropertiesOpen(true); }} onEditText={updateInlineText} onOpenProperties={() => setPropertiesOpen(true)} onMoveBlock={moveBlock} onDuplicateBlock={duplicateBlock} onDeleteBlock={deleteBlock} onPreset={(id, widths) => commit(setRowPreset(document, id, widths))} onDuplicateRow={duplicateRow} onDeleteRow={deleteRow} onResize={(id, index, width) => commit(resizeColumns(document, id, index, width))} onMoveColumn={(rowId, columnId, direction) => { const row = document.rows.find((item) => item.id === rowId); const index = row?.columns.findIndex((column) => column.id === columnId) ?? -1; const neighbor = row?.columns[index + direction]; if (neighbor) commit(moveColumn(document, rowId, columnId, neighbor.id)); }} onPlaceSelectedBlock={(rowId, columnId) => { if (selectedBlock) commit(moveBlockTo(document, selectedBlock, { kind: 'column', rowId, columnId, index: 0 })); }} />
-        {!preview && <PropertiesPanel selectedBlock={selectedBlock} globalStyle={document.globalStyle} open={propertiesOpen} onClose={() => setPropertiesOpen(false)} onDataChange={updateSelectedData} onStyleChange={updateSelectedStyle} onGlobalStyleChange={updateGlobalStyle} onRemoveFont={removeCustomFont} onDuplicate={() => { if (selectedBlockId) duplicateBlock(selectedBlockId); }} onDelete={() => { if (selectedBlockId) deleteBlock(selectedBlockId); }} />}
+        {!preview && <PropertiesPanel selectedBlock={selectedBlock} globalStyle={document.globalStyle} open={propertiesOpen} onClose={() => setPropertiesOpen(false)} onDataChange={updateSelectedData} onStyleChange={updateSelectedStyle} onGlobalStyleChange={updateGlobalStyle} onLoadFontForBlock={loadFontForSelectedBlock} onRemoveFont={removeCustomFont} onDuplicate={() => { if (selectedBlockId) duplicateBlock(selectedBlockId); }} onDelete={() => { if (selectedBlockId) deleteBlock(selectedBlockId); }} />}
       </div>
       <DragOverlay>{activeBlock ? <div className="drag-overlay-block"><BlockPreview block={activeBlock} /></div> : dragId?.startsWith('column:') ? <div className="drag-overlay">Colonna · rilascia su un'altra colonna della riga</div> : dragId?.startsWith('row:') ? <div className="drag-overlay">⠿ Riga completa</div> : dragId?.startsWith('palette:') ? <div className="drag-overlay">{blockCatalog.find((item) => item.type === dragId.slice(8))?.label}</div> : null}</DragOverlay>
     </DndContext>

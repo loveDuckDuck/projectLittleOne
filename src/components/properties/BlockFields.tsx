@@ -34,6 +34,15 @@ function StringList({ label, items, onChange }: { label: string; items: string[]
   return <div className="list-field"><span className="field-label">{label}</span>{items.map((item, index) => <div className="list-field-row" key={index}><input aria-label={`${label} ${index + 1}`} value={item} onChange={(event) => onChange(items.map((current, i) => i === index ? event.target.value : current))} /><button type="button" aria-label={`Sposta punto ${index + 1} sopra`} disabled={index === 0} onClick={() => { const next = [...items]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; onChange(next); }}>↑</button><button type="button" aria-label={`Sposta punto ${index + 1} sotto`} disabled={index === items.length - 1} onClick={() => { const next = [...items]; [next[index + 1], next[index]] = [next[index], next[index + 1]]; onChange(next); }}>↓</button><button type="button" aria-label={`Rimuovi punto ${index + 1}`} onClick={() => onChange(items.filter((_, i) => i !== index))}>×</button></div>)}<button type="button" className="text-action" onClick={() => onChange([...items, ''])}>+ Aggiungi punto</button></div>;
 }
 
+const languageLevels = ['', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Madrelingua'];
+
+function LanguageLevel({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return <label className="form-field"><span>{label}</span><select value={value} onChange={(event) => onChange(event.target.value)}>
+    {value && !languageLevels.includes(value) && <option value={value}>{value} (livello precedente)</option>}
+    {languageLevels.map((level) => <option key={level} value={level}>{level || 'Non indicato'}</option>)}
+  </select></label>;
+}
+
 function ImageFields({ data, onChange }: { data: CVBlockDataMap['image']; onChange: (data: CVBlockDataMap['image']) => void }) {
   const [error, setError] = useState('');
   return <>
@@ -72,12 +81,37 @@ export function BlockFields({ block, onChange }: Props) {
     }
     case 'skills': {
       const d = block.data;
-      return <><label className="form-field"><span>Layout</span><select value={d.layout} onChange={(event) => onChange({ ...d, layout: event.target.value as typeof d.layout })}><option value="inline">In linea</option><option value="list">Elenco</option><option value="grouped">Gruppi</option></select></label>{d.layout === 'grouped' ? <StructuredLines key={block.id} label="Gruppi (Categoria: voce, voce)" value={d.groups.map((g) => `${g.name}: ${g.items.join(', ')}`).join('\n')} onCommit={(value) => onChange({ ...d, groups: value.split('\n').filter(Boolean).map((line) => { const [name, rest = ''] = line.split(':'); return { name: name.trim(), items: rest.split(',').map((item) => item.trim()).filter(Boolean) }; }) })} /> : <StringList label="Competenze" items={d.items} onChange={(value) => onChange({ ...d, items: value })} />}</>;
+      const move = (index: number, direction: -1 | 1) => {
+        const items = [...d.items]; const ratings = [...d.ratings];
+        [items[index], items[index + direction]] = [items[index + direction], items[index]];
+        [ratings[index], ratings[index + direction]] = [ratings[index + direction], ratings[index]];
+        onChange({ ...d, items, ratings });
+      };
+      return <>
+        <label className="form-field"><span>Visualizzazione</span><select value={d.layout} onChange={(event) => onChange({ ...d, layout: event.target.value as typeof d.layout })}><option value="rated">Livelli a pallini</option><option value="list">Elenco puntato</option><option value="inline">In linea</option><option value="grouped">Gruppi</option></select></label>
+        {(d.layout === 'rated' || d.layout === 'list') && <label className="form-field"><span>Colonne delle competenze</span><select value={d.columns} onChange={(event) => onChange({ ...d, columns: Number(event.target.value) as typeof d.columns })}><option value={1}>1 colonna</option><option value={2}>2 colonne</option><option value={3}>3 colonne</option></select></label>}
+        {d.layout === 'grouped' ? <StructuredLines key={block.id} label="Gruppi (Categoria: voce, voce)" value={d.groups.map((g) => `${g.name}: ${g.items.join(', ')}`).join('\n')} onCommit={(value) => onChange({ ...d, groups: value.split('\n').filter(Boolean).map((line) => { const [name, rest = ''] = line.split(':'); return { name: name.trim(), items: rest.split(',').map((item) => item.trim()).filter(Boolean) }; }) })} /> : <div className="list-field"><span className="field-label">Competenze</span>
+          {d.items.map((item, index) => <div className="skill-editor-item" key={index}>
+            <div className="list-field-row"><input aria-label={`Competenza ${index + 1}`} value={item} onChange={(event) => onChange({ ...d, items: d.items.map((current, i) => i === index ? event.target.value : current) })} /><button type="button" aria-label={`Sposta competenza ${index + 1} sopra`} disabled={index === 0} onClick={() => move(index, -1)}>↑</button><button type="button" aria-label={`Sposta competenza ${index + 1} sotto`} disabled={index === d.items.length - 1} onClick={() => move(index, 1)}>↓</button><button type="button" aria-label={`Rimuovi competenza ${index + 1}`} onClick={() => onChange({ ...d, items: d.items.filter((_, i) => i !== index), ratings: d.ratings.filter((_, i) => i !== index) })}>×</button></div>
+            {d.layout === 'rated' && <label className="skill-rating-field"><span>Livello: {(d.ratings[index] ?? 3).toLocaleString('it-IT')}/5</span><input type="range" min={0} max={5} step={0.25} value={d.ratings[index] ?? 3} aria-label={`Livello di ${item || `competenza ${index + 1}`}`} onChange={(event) => onChange({ ...d, ratings: d.ratings.map((rating, i) => i === index ? Number(event.target.value) : rating) })} /></label>}
+          </div>)}
+          <button type="button" className="text-action" onClick={() => onChange({ ...d, items: [...d.items, ''], ratings: [...d.ratings, 3] })}>+ Aggiungi competenza</button>
+        </div>}
+      </>;
     }
     case 'hobbies': return <StringList label="Hobby" items={block.data.items} onChange={(items) => onChange({ items })} />;
     case 'languages': {
       const d = block.data;
-      return <StructuredLines key={block.id} label="Lingue (una per riga: lingua | livello)" value={d.items.map((item) => `${item.language} | ${item.proficiency}`).join('\n')} onCommit={(value) => onChange({ items: value.split('\n').filter(Boolean).map((line) => { const [language, proficiency = ''] = line.split('|'); return { language: language.trim(), proficiency: proficiency.trim() }; }) })} />;
+      return <div className="list-field"><span className="field-label">Lingue</span>
+        {d.items.map((item, index) => <div className="language-editor-item" key={index}>
+          <div className="language-editor-heading"><strong>Lingua {index + 1}</strong><button type="button" aria-label={`Rimuovi lingua ${index + 1}`} onClick={() => onChange({ items: d.items.filter((_, i) => i !== index) })}>×</button></div>
+          <TextField label="Nome nella lingua originale" value={item.language} onChange={(language) => onChange({ items: d.items.map((current, i) => i === index ? { ...current, language } : current) })} />
+          <LanguageLevel label="Parlato" value={item.spoken} onChange={(spoken) => onChange({ items: d.items.map((current, i) => i === index ? { ...current, spoken } : current) })} />
+          <LanguageLevel label="Scritto" value={item.written} onChange={(written) => onChange({ items: d.items.map((current, i) => i === index ? { ...current, written } : current) })} />
+        </div>)}
+        <p className="property-help">Per esempio: Español, 中文, English. Scegli un livello distinto per parlato e scritto.</p>
+        <button type="button" className="text-action" onClick={() => onChange({ items: [...d.items, { language: '', spoken: '', written: '' }] })}>+ Aggiungi lingua</button>
+      </div>;
     }
     case 'projects': {
       const d = block.data;
@@ -90,6 +124,6 @@ export function BlockFields({ block, onChange }: Props) {
     case 'divider': return <><NumberField label="Spessore (px)" value={block.data.thickness} min={1} max={12} onChange={(value) => onChange({ ...block.data, thickness: value })} /><NumberField label="Larghezza (%)" value={block.data.width} min={10} max={100} onChange={(value) => onChange({ ...block.data, width: value })} /></>;
     case 'spacer': return <NumberField label="Altezza (px)" value={block.data.height} min={4} max={200} onChange={(value) => onChange({ ...block.data, height: value })} />;
     case 'image': return <ImageFields data={block.data} onChange={onChange} />;
-    case 'custom': return <>{!block.style.header && <TextField label="Titolo" value={block.data.title} onChange={(value) => onChange({ ...block.data, title: value })} />}<TextArea label="Contenuto" value={block.data.body} onChange={(value) => onChange({ ...block.data, body: value })} /></>;
+    case 'custom': return <>{!block.style.header && <TextField label="Titolo" value={block.data.title} onChange={(value) => onChange({ ...block.data, title: value })} />}<TextArea label="Contenuto" value={block.data.body} onChange={(value) => onChange({ ...block.data, body: value })} /><StringList label="Elenco puntato" items={block.data.bullets} onChange={(bullets) => onChange({ ...block.data, bullets })} /></>;
   }
 }

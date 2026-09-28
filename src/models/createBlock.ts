@@ -12,15 +12,15 @@ export function createBlock(type: CVBlockType): CVBlock {
     case 'experience': return { ...base, style: { ...base.style, header: header('Esperienza professionale', 'briefcase') }, type, data: { title: 'Ruolo', company: 'Azienda', location: '', startDate: '', endDate: '', current: false, description: '', bullets: ['Descrivi un risultato importante'] } };
     case 'education': return { ...base, style: { ...base.style, header: header('Formazione', 'graduation-cap') }, type, data: { degree: 'Titolo di studio', school: 'Istituto', location: '', startDate: '', endDate: '', description: '', bullets: ['Risultato o approfondimento'] } };
     case 'bulletList': return { ...base, type, data: { items: ['Primo punto'], marker: 'disc' } };
-    case 'skills': return { ...base, style: { ...base.style, header: header('Competenze', 'code') }, type, data: { layout: 'inline', items: ['Competenza'], groups: [{ name: 'Categoria', items: ['Competenza'] }] } };
+    case 'skills': return { ...base, style: { ...base.style, header: header('Competenze', 'code') }, type, data: { layout: 'rated', items: ['Competenza'], ratings: [3], columns: 2, groups: [{ name: 'Categoria', items: ['Competenza'] }] } };
     case 'hobbies': return { ...base, style: { ...base.style, header: header('Hobby', 'user') }, type, data: { items: [''] } };
-    case 'languages': return { ...base, style: { ...base.style, header: header('Lingue', 'languages') }, type, data: { items: [{ language: 'Italiano', proficiency: 'Madrelingua' }] } };
+    case 'languages': return { ...base, style: { ...base.style, header: header('Lingue', 'languages') }, type, data: { items: [{ language: 'Italiano', spoken: 'Madrelingua', written: 'Madrelingua' }] } };
     case 'projects': return { ...base, style: { ...base.style, header: header('Progetti', 'folder') }, type, data: { title: 'Progetto', role: '', dates: '', description: '', url: '', bullets: ['Risultato del progetto'] } };
     case 'certifications': return { ...base, style: { ...base.style, header: header('Certificazioni', 'award') }, type, data: { title: 'Certificazione', issuer: 'Ente', date: '', url: '' } };
     case 'divider': return { ...base, type, data: { thickness: 1, width: 100 } };
     case 'spacer': return { ...base, type, data: { height: 20 } };
     case 'image': return { ...base, type, data: { src: '', alt: '', width: 100, height: 0, fit: 'contain' } };
-    case 'custom': return { ...base, style: { ...base.style, header: header('Sezione personalizzata', 'book-open') }, type, data: { title: 'Sezione personalizzata', body: 'Scrivi qui il contenuto.' } };
+    case 'custom': return { ...base, style: { ...base.style, header: header('Sezione personalizzata', 'book-open') }, type, data: { title: 'Sezione personalizzata', body: 'Scrivi qui il contenuto.', bullets: [] } };
   }
 }
 

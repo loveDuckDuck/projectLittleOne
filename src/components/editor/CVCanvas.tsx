@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } fr
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { ArrowLeft, ArrowRight, Copy, GripVertical, Trash2 } from 'lucide-react';
 import type { CVDocument, CVRow } from '../../models/cv';
-import { presets, type DropTarget } from '../../utils/layout';
+import { presets, sideColumnLayout, type DropTarget } from '../../utils/layout';
+import { blockCatalog } from '../../models/blockCatalog';
 import { paginate, type PageSlice } from '../../utils/pagination';
 import { SortableBlock } from './SortableBlock';
 import { CUSTOM_FONT_FAMILY } from '../../utils/assets';
@@ -28,7 +29,6 @@ function Column({ row, columnIndex, props, beginResize }: { row: CVRow; columnIn
     {!preview && row.columns.length > 1 && <div className="column-tools" onClick={(event) => event.stopPropagation()}><button ref={setActivatorNodeRef} type="button" className="column-handle" title="Trascina per riordinare la colonna" aria-label={`Trascina colonna ${columnIndex + 1} nella riga`} {...attributes} {...listeners}><GripVertical size={14} aria-hidden="true" /><span>Colonna {columnIndex + 1}</span></button><button type="button" disabled={columnIndex === 0} title="Sposta colonna a sinistra" aria-label={`Sposta colonna ${columnIndex + 1} a sinistra`} onClick={() => props.onMoveColumn(row.id, column.id, -1)}><ArrowLeft size={14} /></button><button type="button" disabled={columnIndex === row.columns.length - 1} title="Sposta colonna a destra" aria-label={`Sposta colonna ${columnIndex + 1} a destra`} onClick={() => props.onMoveColumn(row.id, column.id, 1)}><ArrowRight size={14} /></button></div>}
     {column.blocks.map((block, index) => <div key={block.id} className="block-slot">
       {dropTarget?.kind === 'column' && dropTarget.columnId === column.id && dropTarget.index === index && !preview && !props.dragId?.startsWith('column:') && <div className="column-drop-line">Rilascia qui</div>}
-      {dropTarget?.kind === 'side' && dropTarget.columnId === column.id && index === 0 && !preview && <div className={`side-drop side-drop-${dropTarget.side}`}>Nuova colonna</div>}
       <SortableBlock block={block} index={index} count={column.blocks.length} selected={block.id === props.selectedBlockId} preview={preview} onSelect={() => props.onSelectBlock(block.id)} onEditText={(value) => props.onEditText(block.id, value)} onMove={(direction) => props.onMoveBlock(block.id, direction)} onDuplicate={() => props.onDuplicateBlock(block.id)} onDelete={() => props.onDeleteBlock(block.id)} />
     </div>)}
     {dropTarget?.kind === 'column' && dropTarget.columnId === column.id && dropTarget.index === column.blocks.length && !preview && !props.dragId?.startsWith('column:') && <div className="column-drop-line">Rilascia qui</div>}
@@ -40,6 +40,11 @@ function Column({ row, columnIndex, props, beginResize }: { row: CVRow; columnIn
 function Row({ row, number, props }: { row: CVRow; number: number; props: CVCanvasProps }) {
   const { preview, dropTarget } = props;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `row:${row.id}`, disabled: preview });
+  const sideTarget = !preview && dropTarget?.kind === 'side' && dropTarget.rowId === row.id && !props.dragId?.startsWith('row:') && !props.dragId?.startsWith('column:') ? dropTarget : null;
+  const sideLayout = sideTarget ? sideColumnLayout(row, sideTarget.columnId, sideTarget.side) : null;
+  const draggedLabel = props.dragId?.startsWith('palette:') ? blockCatalog.find((item) => item.type === props.dragId?.slice(8))?.label : 'Blocco';
+  const columns = row.columns.map((column, columnIndex) => <Column key={column.id} row={row} columnIndex={columnIndex} props={props} beginResize={beginResize} />);
+  if (sideLayout) columns.splice(sideLayout.insertionIndex, 0, <div key="drop-preview" className="cv-column-drop-preview"><span>{draggedLabel}</span><small>{sideTarget?.side === 'left' ? 'A sinistra' : 'A destra'}</small></div>);
   function beginResize(event: PointerEvent<HTMLButtonElement>, index: number) {
     if (event.button !== 0 && event.pointerType !== 'touch') return;
     event.preventDefault(); event.stopPropagation();
@@ -79,7 +84,7 @@ function Row({ row, number, props }: { row: CVRow; number: number; props: CVCanv
     window.addEventListener('pointerup', end);
     window.addEventListener('pointercancel', end);
   }
-  return <div className={`cv-row ${isDragging ? 'is-dragging' : ''}`} data-row-id={row.id}>
+  return <div className={`cv-row ${isDragging ? 'is-dragging' : ''} ${sideLayout ? 'is-side-preview' : ''}`} data-row-id={row.id}>
     {!preview && <div className="row-controls" onClick={(event) => event.stopPropagation()}>
       <button ref={setNodeRef} type="button" className="row-handle" title="Trascina riga" aria-label={`Trascina riga ${number}`} {...attributes} {...listeners}><GripVertical size={15} aria-hidden="true" /><span>Riga {number}</span></button>
       <label>Layout <select aria-label={`Layout riga ${number}`} value={presets.findIndex((widths) => widths.length === row.columns.length && widths.every((width, index) => width === row.columns[index].width))} onChange={(event) => props.onPreset(row.id, presets[Number(event.target.value)] ?? presets[0])}>
@@ -89,8 +94,8 @@ function Row({ row, number, props }: { row: CVRow; number: number; props: CVCanv
       <button type="button" title="Elimina riga" aria-label={`Elimina riga ${number}`} onClick={() => props.onDeleteRow(row.id)}><Trash2 size={14} /></button>
     </div>}
     {dropTarget?.kind === 'row' && dropTarget.rowId === row.id && !preview && <div className={`row-drop row-drop-${dropTarget.side}`}>Rilascia {dropTarget.side === 'above' ? 'sopra' : 'sotto'}</div>}
-    <div className="cv-row-grid" style={{ gridTemplateColumns: row.columns.map((column) => `${column.width}fr`).join(' ') }}>
-      {row.columns.map((column, columnIndex) => <Column key={column.id} row={row} columnIndex={columnIndex} props={props} beginResize={beginResize} />)}
+    <div className="cv-row-grid" style={{ gridTemplateColumns: (sideLayout?.widths ?? row.columns.map((column) => column.width)).map((width) => `${width}fr`).join(' ') }}>
+      {columns}
     </div>
   </div>;
 }
@@ -127,6 +132,6 @@ export function CVCanvas(props: CVCanvasProps) {
       {document.rows.length === 0 && !preview && <div className="empty-canvas">Scegli un blocco dalla libreria o trascinalo qui.</div>}
       {slices.slice(0, -1).map((slice, index) => <div className="page-break-indicator" style={{ top: `${slice.end}px` }} key={index}><span>Pagina {index + 2}</span></div>)}
     </div></div>
-    {!preview && <p className="canvas-caption">Passa sul blocco e trascinalo per spostarlo. Scrivi direttamente nei blocchi Testo e Titolo. Trascina il divisore tra le colonne per cambiarne la larghezza.</p>}
+    {!preview && <p className="canvas-caption">Trascina un blocco sul lato sinistro o destro di un altro per creare una colonna. Scrivi nei blocchi Testo e Titolo; trascina il divisore per regolare la larghezza delle colonne.</p>}
   </main>;
 }

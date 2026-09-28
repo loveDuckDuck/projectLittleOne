@@ -90,9 +90,17 @@ export interface EducationData {
 }
 
 export interface SkillsData {
-  layout: 'list' | 'inline' | 'grouped';
+  layout: 'list' | 'inline' | 'grouped' | 'rated';
   items: string[];
+  ratings: number[];
+  columns: 1 | 2 | 3;
   groups: { name: string; items: string[] }[];
+}
+
+export interface LanguageItem {
+  language: string;
+  spoken: string;
+  written: string;
 }
 
 export interface CVBlockDataMap {
@@ -104,13 +112,13 @@ export interface CVBlockDataMap {
   bulletList: { items: string[]; marker: 'disc' | 'circle' | 'square' };
   skills: SkillsData;
   hobbies: { items: string[] };
-  languages: { items: { language: string; proficiency: string }[] };
+  languages: { items: LanguageItem[] };
   projects: { title: string; role: string; dates: string; description: string; url: string; bullets: string[] };
   certifications: { title: string; issuer: string; date: string; url: string };
   divider: { thickness: number; width: number };
   spacer: { height: number };
   image: { src: string; alt: string; width: number; height: number; fit: 'contain' | 'cover' };
-  custom: { title: string; body: string };
+  custom: { title: string; body: string; bullets: string[] };
 }
 
 export type CVBlock = {
