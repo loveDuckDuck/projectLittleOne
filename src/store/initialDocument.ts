@@ -30,6 +30,8 @@ export const initialDocument: { version: 1; globalStyle: GlobalCVStyle; blocks: 
         photoPosition: 'left',
         photoShape: 'circle',
         photoSize: 112,
+        contactsLayout: 'inline',
+        contactsColumns: 1,
       },
       style: { marginBottom: 20 },
     },

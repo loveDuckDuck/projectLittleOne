@@ -54,6 +54,7 @@ function validBlock(value: unknown): value is CVBlock {
   if (!matchesShape(shapedData, example.data)) return false;
   const data = shapedData as Record<string, unknown>;
   if (value.type === 'personal' && ((data.photoSrc !== '' && !isBackgroundImage(data.photoSrc)) || !['left', 'right'].includes(String(data.photoPosition)) || !profilePhotoShapes.some((shape) => shape.id === data.photoShape) || typeof data.photoSize !== 'number' || !Number.isFinite(data.photoSize) || data.photoSize < 64 || data.photoSize > 180)) return false;
+  if (value.type === 'personal' && (!['inline', 'list'].includes(String(data.contactsLayout)) || ![1, 2, 3].includes(data.contactsColumns as number))) return false;
   if (value.type === 'heading' && (![1, 2, 3].includes(data.level as number))) return false;
   if (value.type === 'bulletList' && !['disc', 'circle', 'square'].includes(String(data.marker))) return false;
   if (value.type === 'skills' && (!['list', 'inline', 'grouped', 'rated'].includes(String(data.layout)) || ![1, 2, 3].includes(data.columns as number) || (data.ratings as number[]).length !== (data.items as string[]).length || (data.ratings as number[]).some((rating) => !Number.isFinite(rating) || rating < 0 || rating > 5 || rating * 4 !== Math.round(rating * 4)))) return false;

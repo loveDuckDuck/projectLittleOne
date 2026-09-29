@@ -60,3 +60,11 @@ src/
 ## Limiti attuali
 
 L'editor mostra un foglio continuo con indicatori dei confini A4. Il PDF cerca di spezzare tra le righe; una riga o un blocco più alto di una pagina può comunque essere diviso. Il PDF usa immagini delle pagine, quindi il testo non è selezionabile e anche le icone sono rasterizzate ad alta risoluzione. L'editing dei gruppi di competenze e delle lingue viene applicato quando esci dal rispettivo campo.
+
+### CV casuali per prove grafiche
+
+Il pulsante **CV casuale** genera un documento modificabile con identità e percorsi inventati in quattro ambiti professionali. Scegli contenuti brevi, medi o lunghi, una disposizione casuale o da una a tre colonne e un avatar generico facoltativo. Le tre colonne si applicano alle sezioni complementari; nome e percorso principale restano a tutta larghezza. Font, colori, contatti e forma dell’avatar variano a ogni generazione.
+
+La generazione funziona offline, senza API: utilizza font di sistema e un avatar PNG creato localmente e incluso nel JSON. I recapiti sono dimostrativi, con link su example.com. **Annulla** recupera il documento precedente finché la pagina resta aperta; esporta il JSON per conservarlo tra le sessioni.
+
+Esegui `npm run test:random` per verificare varietà, disposizioni, quantità dei contenuti e compatibilità JSON su 360 documenti generati.

@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { RandomCVDialog } from './RandomCVDialog';
+import type { RandomCVOptions } from '../../models/randomDocument';
 import packageInfo from '../../../package.json';
 
 interface ToolbarProps {
@@ -15,10 +17,12 @@ interface ToolbarProps {
   onImportProject: (file: File) => void;
   onExportPdf: () => void;
   onNewCV: (empty: boolean) => void;
+  onRandomCV: (options: RandomCVOptions) => boolean;
 }
 
-export function Toolbar({ blockCount, saveStatus, preview, canUndo, canRedo, exporting, onPreviewChange, onUndo, onRedo, onExportProject, onImportProject, onExportPdf, onNewCV }: ToolbarProps) {
+export function Toolbar({ blockCount, saveStatus, preview, canUndo, canRedo, exporting, onPreviewChange, onUndo, onRedo, onExportProject, onImportProject, onExportPdf, onNewCV, onRandomCV }: ToolbarProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [showRandomDialog, setShowRandomDialog] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   return <>
     <header className="toolbar">
@@ -27,6 +31,7 @@ export function Toolbar({ blockCount, saveStatus, preview, canUndo, canRedo, exp
       <div className="toolbar-actions">
         {preview ? <><button type="button" title="Esci dall’anteprima (Esc)" onClick={() => onPreviewChange(false)}>Torna all'editor <span className="shortcut-hint">Esc</span></button><button type="button" className="button-primary" onClick={onExportPdf} disabled={exporting}>{exporting ? 'Esportazione...' : 'Esporta PDF'}</button></> : <>
         <button type="button" onClick={() => setShowNewDialog(true)}>Nuovo CV</button>
+        <button type="button" onClick={() => setShowRandomDialog(true)}>CV casuale</button>
         <button type="button" title="Attiva/disattiva anteprima (Ctrl+A)" onClick={() => onPreviewChange(!preview)}>Anteprima <span className="shortcut-hint">Ctrl+A</span></button>
         <span className="toolbar-separator" aria-hidden="true" />
         <button type="button" onClick={onUndo} disabled={!canUndo} title="Annulla (Ctrl+Z)">↶ <span>Annulla</span></button>
@@ -39,6 +44,7 @@ export function Toolbar({ blockCount, saveStatus, preview, canUndo, canRedo, exp
         </>}
       </div>
     </header>
+    {showRandomDialog && <RandomCVDialog onGenerate={onRandomCV} onClose={() => setShowRandomDialog(false)} />}
     {showNewDialog && <div className="modal-backdrop" role="presentation" onClick={() => setShowNewDialog(false)}><div className="new-cv-dialog" role="dialog" aria-modal="true" aria-labelledby="new-cv-title" onClick={(event) => event.stopPropagation()}><h2 id="new-cv-title">Creare un nuovo CV?</h2><p>Il CV attuale sarà sostituito. Puoi recuperarlo con Annulla finché la pagina rimane aperta; esportalo in JSON se vuoi conservarlo.</p><div className="dialog-actions"><button type="button" onClick={() => setShowNewDialog(false)}>Annulla</button><button type="button" onClick={() => { onNewCV(true); setShowNewDialog(false); }}>CV vuoto</button><button type="button" className="button-primary" onClick={() => { onNewCV(false); setShowNewDialog(false); }}>Con esempio</button></div></div></div>}
   </>;
 }

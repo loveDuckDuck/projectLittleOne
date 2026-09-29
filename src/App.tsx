@@ -8,6 +8,7 @@ import { PropertiesPanel } from './components/properties/PropertiesPanel';
 import { BlocksSidebar } from './components/sidebar/BlocksSidebar';
 import { blockCatalog } from './models/blockCatalog';
 import { createBlock, createStarterDocument } from './models/createBlock';
+import { createRandomDocument, type RandomCVOptions } from './models/randomDocument';
 import type { BlockStyle, CVBlock, CVBlockType, GlobalCVStyle } from './models/cv';
 import { useCVDocument } from './hooks/useCVDocument';
 import { usePanelLayout } from './hooks/usePanelLayout';
@@ -231,6 +232,20 @@ export default function App() {
     if (block && target) commit(moveBlockTo(document, block, target));
   }
 
+  function generateRandomCV(options: RandomCVOptions): boolean {
+    try {
+      replace(createRandomDocument(options));
+      setSelectedBlockId(null);
+      setPropertiesOpen(false);
+      setPreview(false);
+      notify('CV fittizio generato · Annulla per recuperare il precedente');
+      return true;
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Generazione del CV non riuscita.', true);
+      return false;
+    }
+  }
+
   async function importProject(file: File) {
     try { const parsed: unknown = JSON.parse(await file.text()); replace(parseDocument(parsed)); setSelectedBlockId(null); setPreview(false); notify('Progetto importato'); }
     catch (error) { notify(error instanceof Error ? error.message : 'File JSON non valido.', true); }
@@ -242,7 +257,7 @@ export default function App() {
     finally { setExporting(false); }
   }
   return <div className={`app-shell ${preview ? 'preview-mode' : ''}`}>
-    <Toolbar blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto esportato'); }} onImportProject={importProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify('Nuovo CV creato'); }} />
+    <Toolbar onRandomCV={generateRandomCV} blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto esportato'); }} onImportProject={importProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify('Nuovo CV creato'); }} />
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => { dragGeometry.current = null; setDragId(null); setDropTarget(null); }}>
       <div ref={editorLayoutRef} className="editor-layout" style={{ '--blocks-panel-width': `${panelLayout.blocksCollapsed ? 48 : panelLayout.blocksWidth}px`, '--properties-panel-width': `${panelLayout.propertiesCollapsed ? 48 : panelLayout.propertiesWidth}px` } as CSSProperties}>
         {!preview && <BlocksSidebar onAdd={addBlock} collapsed={panelLayout.blocksCollapsed} onToggle={() => togglePanel('blocks')} />}

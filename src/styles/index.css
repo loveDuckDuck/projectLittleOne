@@ -62,8 +62,15 @@ button { font: inherit; }
 .cv-block p, .cv-block h1, .cv-block h2, .cv-block h3 { margin-top: 0; }
 .cv-personal h1 { margin: 0; font-size: 28pt; line-height: 1.08; letter-spacing: -.055em; font-weight: 700; }
 .cv-role { margin: 6px 0 13px; color: var(--block-accent, var(--cv-accent)); font-size: 13pt; font-weight: 600; }
-.cv-contacts { margin-bottom: 16px; color: #64738a; font-size: 8.5pt; line-height: 1.7; }
-.cv-summary { max-width: 570px; margin-bottom: 0; font-size: 10pt; line-height: 1.65; }
+.cv-contacts { display: flex; flex-wrap: wrap; gap: 7px 17px; margin-bottom: 14px; color: #64738a; font-size: 8.5pt; line-height: 1.45; }
+.cv-contacts-inline { column-gap: 8px; }
+.cv-contact-separator { flex: 0 0 auto; margin-left: 3px; }
+.cv-block .cv-contacts-list { display: grid; gap: 7px 24px; margin: 0 0 14px; padding: 0; list-style: none; }
+.cv-contacts-list li { min-width: 0; margin: 0; padding: 0; overflow-wrap: anywhere; }
+.cv-contact { display: inline-flex; align-items: flex-start; gap: 5px; min-width: 0; max-width: 100%; }
+.cv-contact svg { flex: 0 0 13px; margin-top: 1px; color: var(--block-accent, var(--cv-accent)); }
+.cv-contact span { min-width: 0; overflow-wrap: anywhere; }
+.cv-summary { max-width: 570px; margin: 0; font-size: 10pt; line-height: 1.65; }
 .cv-heading { margin: 0; color: var(--block-accent, var(--cv-accent)); font-size: 10.5pt; letter-spacing: .09em; line-height: 1.4; }
 .cv-heading.level-1 { font-size: 15pt; }
 .cv-heading.level-3 { font-size: 9pt; }
@@ -440,7 +447,7 @@ body { overflow: hidden; }
 }
 
 /* Profile photo in the personal details block */
-.cv-personal-head.has-photo { display: flex; align-items: flex-start; gap: 12px; }
+.cv-personal-layout.has-photo { display: flex; align-items: flex-start; gap: 18px; }
 .cv-personal-copy { flex: 1 1 auto; min-width: 0; }
 .profile-photo-frame { position: relative; display: block; overflow: hidden; aspect-ratio: 1; background: #e8eef5; }
 .profile-photo-frame img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
@@ -472,3 +479,23 @@ body { overflow: hidden; }
 .profile-shape-sample.photo-shape-landscape, .profile-shape-sample.photo-shape-pill { aspect-ratio: 5 / 4; }
 .profile-shape-sample.photo-shape-arch { aspect-ratio: 4 / 5; }
 .profile-photo-position button:focus-visible, .profile-photo-shapes button:focus-visible { outline: 2px solid #5a8fc9; outline-offset: 2px; }
+@container (max-width: 430px) {
+  .cv-personal-layout.has-photo { display: grid; gap: 0 10px; }
+  .cv-personal-layout.photo-left { grid-template-columns: minmax(0, 36%) minmax(0, 1fr); }
+  .cv-personal-layout.photo-right { grid-template-columns: minmax(0, 1fr) minmax(0, 36%); }
+  .cv-personal-layout.has-photo .cv-personal-copy { display: contents; }
+  .cv-personal-layout.has-photo .cv-personal-identity { grid-row: 1; min-width: 0; }
+  .cv-personal-layout.photo-left .cv-personal-identity { grid-column: 2; }
+  .cv-personal-layout.photo-right .cv-personal-identity { grid-column: 1; }
+  .cv-personal-layout.has-photo .cv-personal-identity h1 { font-size: clamp(17pt, 7cqi, 25pt); }
+  .cv-personal-layout.has-photo .cv-profile-photo { grid-row: 1; width: min(var(--profile-photo-size, 112px), 100%); }
+  .cv-personal-layout.photo-left .cv-profile-photo { grid-column: 1; }
+  .cv-personal-layout.photo-right .cv-profile-photo { grid-column: 2; }
+  .cv-personal-layout.has-photo .cv-contacts, .cv-personal-layout.has-photo .cv-summary { grid-column: 1 / -1; }
+  .cv-personal-layout.has-photo .cv-contacts { margin-top: 9px; }
+}
+
+/* Native dialog keeps keyboard focus inside the example generator. */
+.random-cv-dialog { border: 0; max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; color: #243047; }
+.random-cv-dialog::backdrop { background: #13223c66; }
+.random-cv-dialog .random-cv-note { margin: 20px 0; padding: 12px; background: #f3f6fa; border-radius: 7px; font-size: 12px; }

@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { BriefcaseBusiness, FolderGit2, Globe2, Mail, MapPin, Phone } from 'lucide-react';
 import type { CVBlock } from '../../models/cv';
 import { cvIcons } from '../../utils/icons';
 import { colorWithOpacity } from '../../utils/color';
@@ -27,17 +28,28 @@ function content(block: CVBlock, editable = false, onEditText?: (value: string) 
   switch (block.type) {
     case 'personal': {
       const d = block.data;
-      const contacts = [d.email, d.phone, [d.city, d.country].filter(Boolean).join(', '), d.website, d.linkedIn, d.github].filter(Boolean);
+      const contacts = [
+        { value: d.email, label: 'Email', Icon: Mail },
+        { value: d.phone, label: 'Telefono', Icon: Phone },
+        { value: [d.city, d.country].filter(Boolean).join(', '), label: 'Posizione', Icon: MapPin },
+        { value: d.website, label: 'Sito web', Icon: Globe2 },
+        { value: d.linkedIn, label: 'LinkedIn', Icon: BriefcaseBusiness },
+        { value: d.github, label: 'GitHub', Icon: FolderGit2 },
+      ].filter((item) => item.value);
       const name = [d.firstName, d.lastName].filter(Boolean).join(' ');
       const photo = d.photoSrc && <span className={`profile-photo-frame cv-profile-photo photo-shape-${d.photoShape}`} style={{ '--profile-photo-size': `${d.photoSize}px` } as CSSProperties}><img src={d.photoSrc} alt={`Foto profilo di ${name || 'questa persona'}`} /></span>;
       return <div className="cv-personal">
-        <div className={`cv-personal-head ${photo ? 'has-photo' : ''}`}>
+        <div className={`cv-personal-layout ${photo ? `has-photo photo-${d.photoPosition}` : ''}`}>
           {d.photoPosition === 'left' && photo}
-          <div className="cv-personal-copy"><h1>{name}</h1>{d.professionalTitle && <p className="cv-role">{d.professionalTitle}</p>}</div>
+          <div className="cv-personal-copy">
+            <div className="cv-personal-identity"><h1>{name}</h1>{d.professionalTitle && <p className="cv-role">{d.professionalTitle}</p>}</div>
+            {contacts.length > 0 && (d.contactsLayout === 'list'
+              ? <ul className="cv-contacts cv-contacts-list" role="list" style={{ gridTemplateColumns: `repeat(${d.contactsColumns}, minmax(0, 1fr))` }}>{contacts.map(({ value, label, Icon }) => <li className="cv-contact" key={label} aria-label={`${label}: ${value}`}><Icon size={13} strokeWidth={1.8} aria-hidden="true" /><span>{value}</span></li>)}</ul>
+              : <div className="cv-contacts cv-contacts-inline">{contacts.map(({ value, label, Icon }, index) => <span className="cv-contact" key={label} aria-label={`${label}: ${value}`}><Icon size={13} strokeWidth={1.8} aria-hidden="true" /><span>{value}</span>{index < contacts.length - 1 && <span className="cv-contact-separator" aria-hidden="true">·</span>}</span>)}</div>)}
+            {d.summary && <p className="cv-summary">{d.summary}</p>}
+          </div>
           {d.photoPosition === 'right' && photo}
         </div>
-        {contacts.length > 0 && <p className="cv-contacts">{contacts.join('  ·  ')}</p>}
-        {d.summary && <p className="cv-summary">{d.summary}</p>}
       </div>;
     }
     case 'heading':

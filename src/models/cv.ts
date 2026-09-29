@@ -72,6 +72,8 @@ export interface PersonalData {
   photoPosition: 'left' | 'right';
   photoShape: ProfilePhotoShape;
   photoSize: number;
+  contactsLayout: 'inline' | 'list';
+  contactsColumns: 1 | 2 | 3;
 }
 
 export interface ExperienceData {
