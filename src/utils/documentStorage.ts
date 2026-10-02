@@ -38,6 +38,8 @@ function validBlock(value: unknown): value is CVBlock {
   if ('fontSize' in style && ((style.fontSize as number) < 5 || (style.fontSize as number) > 72)) return false;
   if ('lineHeight' in style && ((style.lineHeight as number) < 0.8 || (style.lineHeight as number) > 4)) return false;
   if ('textAlign' in style && !['left', 'center', 'right'].includes(String(style.textAlign))) return false;
+  if ('contactLayout' in style && !['inline', '1', '2', '3'].includes(String(style.contactLayout))) return false;
+  if ('showContactIcons' in style && typeof style.showContactIcons !== 'boolean') return false;
   if (['textColor', 'accentColor'].some((key) => key in style && typeof style[key] !== 'string')) return false;
   if ('header' in style) {
     const header = style.header;

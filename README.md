@@ -11,6 +11,15 @@ pnpm run dev
 
 Apri l'indirizzo mostrato da Vite, normalmente `http://localhost:5173/`. Su un computer con npm puoi usare `npm install`, `npm run dev` e `npm run build`.
 
+Se PowerShell mostra `pnpm: The term 'pnpm' is not recognized`, verifica prima `node --version` e `npm --version`. Se entrambi rispondono, avvia il progetto con:
+
+```powershell
+npm install
+npm run dev
+```
+
+Se anche `node` o `npm` non vengono riconosciuti, installa Node.js con npm e riapri PowerShell prima di riprovare. Per vedere gli script disponibili usa `npm run` (oppure `pnpm run` dopo aver installato pnpm).
+
 ```powershell
 pnpm run build
 pnpm run test:layout
@@ -22,6 +31,7 @@ La build viene creata in `dist/`. Per GitHub Pages imposta la base del repositor
 
 - Usa `+` nella libreria per aggiungere un blocco oppure trascinalo nel foglio.
 - Clicca un blocco nel CV per aprire i campi di modifica. Su tablet e telefono il pannello Proprietà si apre a destra; il pulsante «Modifica blocco» lo riapre quando serve.
+- Nel blocco **Informazioni personali**, i contatti mostrano icone per email, telefono, località e profili. In Proprietà → Contatti scegli la riga o da una a tre colonne e, se preferisci, nascondi le icone. Le colonne si riducono quando il blocco è stretto.
 - Nei blocchi **Testo** e **Titolo** puoi scrivere direttamente nel foglio. Per gli altri blocchi usa i campi «Contenuto» nel pannello Proprietà.
 - Sul telefono il foglio si adatta alla larghezza dello schermo. Premi «Ingrandisci pagina» per leggere e modificare con lo scorrimento orizzontale, poi «Adatta pagina» per vedere l'intero CV.
 - `⋮⋮` sposta l'intero blocco; `⠿` sposta la riga. Rilascia sopra o sotto una riga, in una colonna o ai lati di un blocco per creare una colonna.
@@ -29,6 +39,7 @@ La build viene creata in `dist/`. Per GitHub Pages imposta la base del repositor
 - Per aggiungere un'icona, seleziona un blocco di sezione (per esempio Esperienza o Formazione), apri «Intestazione e icona», attiva «Mostra icona» e scegli il simbolo. Puoi cambiarne dimensione, posizione e colore.
 - Usa Annulla/Ripristina o `Ctrl+Z` e `Ctrl+Shift+Z` quando non stai scrivendo in un campo.
 - Il CV viene salvato automaticamente nel `localStorage` del browser, con data dell'ultimo aggiornamento. La toolbar mostra lo stato del salvataggio.
+- Lo switch sole/luna accanto a «CV Builder» cambia il tema dell'editor. La scelta viene ricordata nel browser; il foglio del CV conserva i colori impostati per la stampa.
 - Esporta/Importa JSON per conservare o ripristinare un progetto. L'import accetta versioni 1 e 2; i blocchi v1 vengono migrati in righe singole.
 - Anteprima nasconde gli strumenti di modifica. Esporta PDF crea pagine A4 senza i controlli dell'editor.
 - Nuovo CV permette di partire da un esempio o da un documento vuoto dopo una conferma.

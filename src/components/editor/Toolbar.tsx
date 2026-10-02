@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import packageInfo from '../../../package.json';
 
 interface ToolbarProps {
+  theme: 'light' | 'dark';
+  onThemeChange: () => void;
   blockCount: number;
   saveStatus: 'saved' | 'saving' | 'error';
   preview: boolean;
@@ -17,12 +20,12 @@ interface ToolbarProps {
   onNewCV: (empty: boolean) => void;
 }
 
-export function Toolbar({ blockCount, saveStatus, preview, canUndo, canRedo, exporting, onPreviewChange, onUndo, onRedo, onExportProject, onImportProject, onExportPdf, onNewCV }: ToolbarProps) {
+export function Toolbar({ theme, onThemeChange, blockCount, saveStatus, preview, canUndo, canRedo, exporting, onPreviewChange, onUndo, onRedo, onExportProject, onImportProject, onExportPdf, onNewCV }: ToolbarProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
   return <>
     <header className="toolbar">
-      <div className="toolbar-brand"><span className="brand-mark" aria-hidden="true">CV</span><div><strong>CV Builder</strong><span>Beta {packageInfo.version}</span></div></div>
+      <div className="toolbar-brand"><span className="brand-mark" aria-hidden="true">CV</span><div><strong>CV Builder</strong><span>Beta {packageInfo.version}</span></div><button type="button" className="theme-toggle" role="switch" aria-checked={theme === 'dark'} aria-label="Modalità scura" title={theme === 'dark' ? 'Passa alla modalità chiara' : 'Passa alla modalità scura'} onClick={onThemeChange}><Sun size={15} aria-hidden="true" /><Moon size={15} aria-hidden="true" /><span className="theme-toggle-thumb" aria-hidden="true" /></button></div>
       <div className="toolbar-document"><span className={`document-dot ${saveStatus}`} aria-hidden="true" />Il mio curriculum<span className="toolbar-count">{blockCount} blocchi · {saveStatus === 'saved' ? 'Salvato' : saveStatus === 'saving' ? 'Salvataggio...' : 'Errore salvataggio'}</span></div>
       <div className="toolbar-actions">
         {preview ? <><button type="button" onClick={() => onPreviewChange(false)}>Torna all'editor</button><button type="button" className="button-primary" onClick={onExportPdf} disabled={exporting}>{exporting ? 'Esportazione...' : 'Esporta PDF'}</button></> : <>

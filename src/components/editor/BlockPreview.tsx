@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { BriefcaseBusiness, GitBranch, Globe, Link2, Mail, MapPin, Phone } from 'lucide-react';
 import type { CVBlock } from '../../models/cv';
 import { cvIcons } from '../../utils/icons';
 
@@ -23,8 +24,17 @@ function content(block: CVBlock, editable = false, onEditText?: (value: string) 
   switch (block.type) {
     case 'personal': {
       const d = block.data;
-      const contacts = [d.email, d.phone, [d.city, d.country].filter(Boolean).join(', '), d.website, d.linkedIn, d.github].filter(Boolean);
-      return <div className="cv-personal"><h1>{[d.firstName, d.lastName].filter(Boolean).join(' ')}</h1>{d.professionalTitle && <p className="cv-role">{d.professionalTitle}</p>}{contacts.length > 0 && <p className="cv-contacts">{contacts.join('  ·  ')}</p>}{d.summary && <p className="cv-summary">{d.summary}</p>}</div>;
+      const contacts = [
+        { label: 'Email', value: d.email, Icon: Mail },
+        { label: 'Telefono', value: d.phone, Icon: Phone },
+        { label: 'Località', value: [d.city, d.country].filter(Boolean).join(', '), Icon: MapPin },
+        { label: 'Sito web', value: d.website, Icon: Globe },
+        { label: 'LinkedIn', value: d.linkedIn, Icon: Link2 },
+        { label: 'GitHub', value: d.github, Icon: GitBranch },
+      ].filter((item) => item.value.trim());
+      const showIcons = block.style.showContactIcons !== false;
+      const layout = block.style.contactLayout ?? '2';
+      return <div className="cv-personal"><h1>{[d.firstName, d.lastName].filter(Boolean).join(' ')}</h1>{d.professionalTitle && <p className="cv-role">{showIcons && <BriefcaseBusiness size={15} strokeWidth={1.8} aria-hidden="true" />}{d.professionalTitle}</p>}{contacts.length > 0 && <div className={`cv-contacts layout-${layout}`}>{contacts.map(({ label, value, Icon }) => <span key={label} className="cv-contact-item" title={label} aria-label={`${label}: ${value}`}>{showIcons && <Icon size={14} strokeWidth={1.8} aria-hidden="true" />}<span>{label === 'LinkedIn' || label === 'GitHub' ? `${label}: ${value}` : value}</span></span>)}</div>}{d.summary && <p className="cv-summary">{d.summary}</p>}</div>;
     }
     case 'heading':
       return <h2 className={`cv-heading level-${block.data.level} ${block.data.accentLine ? 'has-accent-line' : ''} ${block.data.uppercase ? 'is-uppercase' : ''} ${block.data.underline ? 'is-underlined' : ''}`} contentEditable={editable} suppressContentEditableWarning onBlur={editable ? (event) => onEditText?.(event.currentTarget.innerText) : undefined} onKeyDown={editable ? (event) => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } } : undefined} role={editable ? 'textbox' : undefined} aria-label={editable ? 'Modifica titolo' : undefined}>{block.data.text}</h2>;

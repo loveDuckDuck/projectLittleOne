@@ -17,6 +17,13 @@ interface Toast { id: number; message: string; error?: boolean }
 
 export default function App() {
   const { document, canUndo, canRedo, saveStatus, commit, replace, undo, redo } = useCVDocument();
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = window.localStorage.getItem('cv-builder-theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch { /* The editor remains usable when storage is unavailable. */ }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -31,6 +38,10 @@ export default function App() {
   const activeBlock = allBlocks.find((block) => block.id === dragId);
 
   function notify(message: string, error = false) { setToast({ id: Date.now(), message, error }); }
+  useEffect(() => {
+    try { window.localStorage.setItem('cv-builder-theme', theme); }
+    catch { /* The theme still works for this session. */ }
+  }, [theme]);
   useEffect(() => {
     if (lastSaveStatus.current === 'saving' && saveStatus === 'saved' && canUndo) notify('CV salvato');
     if (saveStatus === 'error' && lastSaveStatus.current !== 'error') notify('Salvataggio locale non riuscito', true);
@@ -188,8 +199,8 @@ export default function App() {
     catch (error) { notify(error instanceof Error ? `PDF: ${error.message}` : 'Esportazione PDF non riuscita.', true); }
     finally { setExporting(false); }
   }
-  return <div className={`app-shell ${preview ? 'preview-mode' : ''}`}>
-    <Toolbar blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto esportato'); }} onImportProject={importProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify('Nuovo CV creato'); }} />
+  return <div className={`app-shell ${preview ? 'preview-mode' : ''}`} data-theme={theme}>
+    <Toolbar theme={theme} onThemeChange={() => setTheme((current) => current === 'light' ? 'dark' : 'light')} blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto esportato'); }} onImportProject={importProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify('Nuovo CV creato'); }} />
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => { setDragId(null); setDropTarget(null); }}>
       <div className="editor-layout">
         {!preview && <BlocksSidebar onAdd={addBlock} />}

@@ -40,6 +40,7 @@ export function PropertiesPanel({ selectedBlock, open, onClose, globalStyle, onD
       </div>
       <div className={`panel-body ${collapsed ? 'is-collapsed' : ''}`}>
       {selectedBlock ? <>
+        {selectedBlock.type === 'personal' && <section className="property-section"><h3>Contatti</h3><label className="form-field"><span>Disposizione</span><select value={selectedBlock.style.contactLayout ?? '2'} onChange={(event) => onStyleChange({ contactLayout: event.target.value as NonNullable<BlockStyle['contactLayout']> })}><option value="inline">In riga</option><option value="1">1 colonna</option><option value="2">2 colonne</option><option value="3">3 colonne</option></select></label><label className="check-field"><input type="checkbox" checked={selectedBlock.style.showContactIcons !== false} onChange={(event) => onStyleChange({ showContactIcons: event.target.checked })} /><span>Mostra le icone</span></label><p className="property-help">Le colonne si adattano alla larghezza del blocco.</p></section>}
         <section className="property-section"><h3>Contenuto</h3><BlockFields block={selectedBlock} onChange={onDataChange} /></section>
         <HeaderProperties block={selectedBlock} onStyleChange={onStyleChange} />
         <section className="property-section"><h3>Tipografia</h3>
