@@ -28,16 +28,13 @@ export interface BlockStyle {
   marginBottom?: number;
   textColor?: string;
   accentColor?: string;
-<<<<<<< HEAD
   contactLayout?: 'inline' | '1' | '2' | '3';
   showContactIcons?: boolean;
-=======
   fontFamily?: string;
   backgroundColor?: string;
   backgroundOpacity?: number;
   backgroundImage?: string;
   backgroundMode?: BackgroundMode;
->>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
   header?: BlockHeaderStyle;
 }
 

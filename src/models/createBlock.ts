@@ -6,11 +6,7 @@ export function createBlock(type: CVBlockType): CVBlock {
   const base = { id: crypto.randomUUID(), style: { marginBottom: 12 } };
   const header = (title: string, icon: string): BlockHeaderStyle => ({ title, showIcon: false, icon, iconPosition: 'left', iconSize: 16, iconGap: 7, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', textAlign: 'left', bottomBorder: true, dividerLine: false, spacingAbove: 0, spacingBelow: 10 });
   switch (type) {
-<<<<<<< HEAD
-    case 'personal': return { ...base, style: { ...base.style, contactLayout: '2', showContactIcons: true }, type, data: { firstName: 'Nome', lastName: 'Cognome', professionalTitle: 'Titolo professionale', email: '', phone: '', city: '', country: '', linkedIn: '', github: '', website: '', summary: '' } };
-=======
     case 'personal': return { ...base, type, data: { firstName: 'Nome', lastName: 'Cognome', professionalTitle: 'Titolo professionale', email: '', phone: '', city: '', country: '', linkedIn: '', github: '', website: '', summary: '', photoSrc: '', photoPosition: 'left', photoShape: 'circle', photoSize: 112, contactsLayout: 'inline', contactsColumns: 1 } };
->>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
     case 'text': return { ...base, type, data: { text: 'Scrivi qui il tuo testo.' } };
     case 'heading': return { ...base, type, data: { text: 'Nuova sezione', level: 2, uppercase: true, underline: false, accentLine: true } };
     case 'experience': return { ...base, style: { ...base.style, header: header('Esperienza professionale', 'briefcase') }, type, data: { title: 'Ruolo', company: 'Azienda', location: '', startDate: '', endDate: '', current: false, description: '', bullets: ['Descrivi un risultato importante'] } };

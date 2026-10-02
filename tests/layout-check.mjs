@@ -4,7 +4,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const sourceFiles = ['src/utils/layout.ts', 'src/utils/assets.ts', 'src/models/createBlock.ts', 'src/store/initialDocument.ts', 'src/utils/documentStorage.ts'];
+const sourceFiles = ['src/utils/layout.ts', 'src/utils/assets.ts', 'src/models/profilePhoto.ts', 'src/models/createBlock.ts', 'src/store/initialDocument.ts', 'src/utils/documentStorage.ts'];
 for (const path of sourceFiles) {
   const source = await readFile(path, 'utf8');
   const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText.replace(/(from\s+['"])(\.\.?\/[^'"]+)(['"])/g, '$1$2.mjs$3');
@@ -19,8 +19,8 @@ const { createBlock, createStarterDocument } = await load('src/models/createBloc
 const { parseDocument } = await load('src/utils/documentStorage.ts');
 const { initialDocument } = await load('src/store/initialDocument.ts');
 const personal = createBlock('personal');
-assert.equal(personal.style.contactLayout, '2');
-assert.equal(personal.style.showContactIcons, true);
+assert.equal(personal.data.contactsLayout, 'inline');
+assert.equal(personal.data.contactsColumns, 1);
 const personalized = createStarterDocument();
 const personalBlock = personalized.rows[0].columns[0].blocks[0];
 assert.equal(personalBlock.type, 'personal');
@@ -41,17 +41,22 @@ assert.deepEqual(document.rows[0].columns.map((column) => column.width), [50, 50
 assert.deepEqual(layout.blocksOf(document).map((block) => block.id), [education.id, skills.id]);
 const separated = layout.moveBlockTo(document, skills, { kind: 'row', rowId: document.rows[0].id, side: 'below' });
 assert.equal(separated.rows.length, 2);
-assert.deepEqual(separated.rows.map((row) => row.columns.length), [2, 1]);
+assert.deepEqual(separated.rows.map((row) => row.columns.length), [1, 1]);
 let withEmpty = layout.placeBlock(createStarterDocument(true), createBlock('text'), null);
 const moving = withEmpty.rows[0].columns[0].blocks[0];
 const splitByMoving = layout.moveBlockTo(withEmpty, moving, { kind: 'side', rowId: withEmpty.rows[0].id, columnId: withEmpty.rows[0].columns[0].id, side: 'right' });
-assert.deepEqual(splitByMoving.rows[0].columns.map((column) => column.blocks.map((block) => block.id)), [[], [moving.id]]);
+assert.deepEqual(splitByMoving.rows[0].columns.map((column) => column.blocks.map((block) => block.id)), [[moving.id]]);
 withEmpty = layout.setRowPreset(withEmpty, withEmpty.rows[0].id, [50, 50]);
-const [firstId, secondId] = withEmpty.rows[0].columns.map((column) => column.id);
+const [, secondId] = withEmpty.rows[0].columns.map((column) => column.id);
 withEmpty = layout.moveBlockTo(withEmpty, moving, { kind: 'column', rowId: withEmpty.rows[0].id, columnId: secondId, index: 0 });
-assert.deepEqual(withEmpty.rows[0].columns.map((column) => column.blocks.map((block) => block.id)), [[], [moving.id]]);
-withEmpty = layout.moveColumn(withEmpty, withEmpty.rows[0].id, secondId, firstId);
-assert.deepEqual(withEmpty.rows[0].columns.map((column) => column.id), [secondId, firstId]);
+assert.deepEqual(withEmpty.rows[0].columns.map((column) => column.blocks.map((block) => block.id)), [[moving.id]]);
+assert.equal(withEmpty.rows[0].columns[0].id, secondId);
+let twoFilledColumns = layout.placeBlock(createStarterDocument(true), createBlock('text'), null);
+const rowId = twoFilledColumns.rows[0].id;
+twoFilledColumns = layout.placeBlock(twoFilledColumns, createBlock('text'), { kind: 'side', rowId, columnId: twoFilledColumns.rows[0].columns[0].id, side: 'right' });
+const [leftId, rightId] = twoFilledColumns.rows[0].columns.map((column) => column.id);
+twoFilledColumns = layout.moveColumn(twoFilledColumns, rowId, rightId, leftId);
+assert.deepEqual(twoFilledColumns.rows[0].columns.map((column) => column.id), [rightId, leftId]);
 document = layout.resizeColumns(document, document.rows[0].id, 0, 70);
 assert.deepEqual(document.rows[0].columns.map((column) => column.width), [70, 30]);
 const thirdFromNarrow = layout.placeBlock(document, createBlock('text'), { kind: 'side', rowId: document.rows[0].id, columnId: document.rows[0].columns[1].id, side: 'right' });

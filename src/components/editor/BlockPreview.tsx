@@ -1,9 +1,5 @@
 import type { CSSProperties } from 'react';
-<<<<<<< HEAD
-import { BriefcaseBusiness, GitBranch, Globe, Link2, Mail, MapPin, Phone } from 'lucide-react';
-=======
 import { BriefcaseBusiness, FolderGit2, Globe2, Mail, MapPin, Phone } from 'lucide-react';
->>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
 import type { CVBlock } from '../../models/cv';
 import { cvIcons } from '../../utils/icons';
 import { colorWithOpacity } from '../../utils/color';
@@ -33,18 +29,6 @@ function content(block: CVBlock, editable = false, onEditText?: (value: string) 
     case 'personal': {
       const d = block.data;
       const contacts = [
-<<<<<<< HEAD
-        { label: 'Email', value: d.email, Icon: Mail },
-        { label: 'Telefono', value: d.phone, Icon: Phone },
-        { label: 'Località', value: [d.city, d.country].filter(Boolean).join(', '), Icon: MapPin },
-        { label: 'Sito web', value: d.website, Icon: Globe },
-        { label: 'LinkedIn', value: d.linkedIn, Icon: Link2 },
-        { label: 'GitHub', value: d.github, Icon: GitBranch },
-      ].filter((item) => item.value.trim());
-      const showIcons = block.style.showContactIcons !== false;
-      const layout = block.style.contactLayout ?? '2';
-      return <div className="cv-personal"><h1>{[d.firstName, d.lastName].filter(Boolean).join(' ')}</h1>{d.professionalTitle && <p className="cv-role">{showIcons && <BriefcaseBusiness size={15} strokeWidth={1.8} aria-hidden="true" />}{d.professionalTitle}</p>}{contacts.length > 0 && <div className={`cv-contacts layout-${layout}`}>{contacts.map(({ label, value, Icon }) => <span key={label} className="cv-contact-item" title={label} aria-label={`${label}: ${value}`}>{showIcons && <Icon size={14} strokeWidth={1.8} aria-hidden="true" />}<span>{label === 'LinkedIn' || label === 'GitHub' ? `${label}: ${value}` : value}</span></span>)}</div>}{d.summary && <p className="cv-summary">{d.summary}</p>}</div>;
-=======
         { value: d.email, label: 'Email', Icon: Mail },
         { value: d.phone, label: 'Telefono', Icon: Phone },
         { value: [d.city, d.country].filter(Boolean).join(', '), label: 'Posizione', Icon: MapPin },
@@ -53,21 +37,24 @@ function content(block: CVBlock, editable = false, onEditText?: (value: string) 
         { value: d.github, label: 'GitHub', Icon: FolderGit2 },
       ].filter((item) => item.value);
       const name = [d.firstName, d.lastName].filter(Boolean).join(' ');
+      const showIcons = block.style.showContactIcons !== false;
+      const contactLayout = block.style.contactLayout;
+      const contactsAsList = contactLayout ? contactLayout !== 'inline' : d.contactsLayout === 'list';
+      const contactColumns = contactLayout && contactLayout !== 'inline' ? Number(contactLayout) : d.contactsColumns;
       const photo = d.photoSrc && <span className={`profile-photo-frame cv-profile-photo photo-shape-${d.photoShape}`} style={{ '--profile-photo-size': `${d.photoSize}px` } as CSSProperties}><img src={d.photoSrc} alt={`Foto profilo di ${name || 'questa persona'}`} /></span>;
       return <div className="cv-personal">
         <div className={`cv-personal-layout ${photo ? `has-photo photo-${d.photoPosition}` : ''}`}>
           {d.photoPosition === 'left' && photo}
           <div className="cv-personal-copy">
             <div className="cv-personal-identity"><h1>{name}</h1>{d.professionalTitle && <p className="cv-role">{d.professionalTitle}</p>}</div>
-            {contacts.length > 0 && (d.contactsLayout === 'list'
-              ? <ul className="cv-contacts cv-contacts-list" role="list" style={{ gridTemplateColumns: `repeat(${d.contactsColumns}, minmax(0, 1fr))` }}>{contacts.map(({ value, label, Icon }) => <li className="cv-contact" key={label} aria-label={`${label}: ${value}`}><Icon size={13} strokeWidth={1.8} aria-hidden="true" /><span>{value}</span></li>)}</ul>
-              : <div className="cv-contacts cv-contacts-inline">{contacts.map(({ value, label, Icon }, index) => <span className="cv-contact" key={label} aria-label={`${label}: ${value}`}><Icon size={13} strokeWidth={1.8} aria-hidden="true" /><span>{value}</span>{index < contacts.length - 1 && <span className="cv-contact-separator" aria-hidden="true">·</span>}</span>)}</div>)}
+            {contacts.length > 0 && (contactsAsList
+              ? <ul className="cv-contacts cv-contacts-list" role="list" style={{ gridTemplateColumns: `repeat(${contactColumns}, minmax(0, 1fr))` }}>{contacts.map(({ value, label, Icon }) => <li className="cv-contact" key={label} aria-label={`${label}: ${value}`}>{showIcons && <Icon size={13} strokeWidth={1.8} aria-hidden="true" />}<span>{value}</span></li>)}</ul>
+              : <div className="cv-contacts cv-contacts-inline">{contacts.map(({ value, label, Icon }, index) => <span className="cv-contact" key={label} aria-label={`${label}: ${value}`}>{showIcons && <Icon size={13} strokeWidth={1.8} aria-hidden="true" />}<span>{value}</span>{index < contacts.length - 1 && <span className="cv-contact-separator" aria-hidden="true">·</span>}</span>)}</div>)}
             {d.summary && <p className="cv-summary">{d.summary}</p>}
           </div>
           {d.photoPosition === 'right' && photo}
         </div>
       </div>;
->>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
     }
     case 'heading':
       return <h2 className={`cv-heading level-${block.data.level} ${block.data.accentLine ? 'has-accent-line' : ''} ${block.data.uppercase ? 'is-uppercase' : ''} ${block.data.underline ? 'is-underlined' : ''}`} contentEditable={editable} suppressContentEditableWarning onBlur={editable ? (event) => onEditText?.(event.currentTarget.innerText) : undefined} onKeyDown={editable ? (event) => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } } : undefined} role={editable ? 'textbox' : undefined} aria-label={editable ? 'Modifica titolo' : undefined}>{block.data.text}</h2>;

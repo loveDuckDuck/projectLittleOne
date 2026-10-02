@@ -1,10 +1,7 @@
 import { useRef, useState } from 'react';
-<<<<<<< HEAD
 import { Moon, Sun } from 'lucide-react';
-=======
 import { RandomCVDialog } from './RandomCVDialog';
 import type { RandomCVOptions } from '../../models/randomDocument';
->>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
 import packageInfo from '../../../package.json';
 
 interface ToolbarProps {
@@ -26,11 +23,7 @@ interface ToolbarProps {
   onRandomCV: (options: RandomCVOptions) => boolean;
 }
 
-<<<<<<< HEAD
-export function Toolbar({ theme, onThemeChange, blockCount, saveStatus, preview, canUndo, canRedo, exporting, onPreviewChange, onUndo, onRedo, onExportProject, onImportProject, onExportPdf, onNewCV }: ToolbarProps) {
-=======
-export function Toolbar({ blockCount, saveStatus, preview, canUndo, canRedo, exporting, onPreviewChange, onUndo, onRedo, onExportProject, onImportProject, onExportPdf, onNewCV, onRandomCV }: ToolbarProps) {
->>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
+export function Toolbar({ theme, onThemeChange, blockCount, saveStatus, preview, canUndo, canRedo, exporting, onPreviewChange, onUndo, onRedo, onExportProject, onImportProject, onExportPdf, onNewCV, onRandomCV }: ToolbarProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [showRandomDialog, setShowRandomDialog] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);

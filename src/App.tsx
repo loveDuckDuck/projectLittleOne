@@ -129,7 +129,15 @@ export default function App() {
     const rows = [...document.rows]; rows.splice(index + 1, 0, copy); commit({ ...document, rows });
   }
   function deleteRow(id: string) { commit({ ...document, rows: document.rows.filter((row) => row.id !== id) }); setSelectedBlockId(null); }
-  function updateSelectedData(data: CVBlock['data']) { if (selectedBlockId) commit(mapBlock(document, selectedBlockId, (block) => ({ ...block, data } as CVBlock))); }
+  function updateSelectedData(data: CVBlock['data']) {
+    if (!selectedBlockId) return;
+    commit(mapBlock(document, selectedBlockId, (block) => {
+      if (block.type === 'personal' && 'contactsLayout' in data && (block.data.contactsLayout !== data.contactsLayout || block.data.contactsColumns !== data.contactsColumns)) {
+        return { ...block, data, style: { ...block.style, contactLayout: undefined } } as CVBlock;
+      }
+      return { ...block, data } as CVBlock;
+    }));
+  }
   function updateInlineText(id: string, value: string) {
     const current = allBlocks.find((block) => block.id === id);
     if (!current || (current.type !== 'text' && current.type !== 'heading') || current.data.text === value) return;
@@ -267,17 +275,8 @@ export default function App() {
     catch (error) { notify(error instanceof Error ? `PDF: ${error.message}` : 'Esportazione PDF non riuscita.', true); }
     finally { setExporting(false); }
   }
-<<<<<<< HEAD
   return <div className={`app-shell ${preview ? 'preview-mode' : ''}`} data-theme={theme}>
-    <Toolbar theme={theme} onThemeChange={() => setTheme((current) => current === 'light' ? 'dark' : 'light')} blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto esportato'); }} onImportProject={importProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify('Nuovo CV creato'); }} />
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => { setDragId(null); setDropTarget(null); }}>
-      <div className="editor-layout">
-        {!preview && <BlocksSidebar onAdd={addBlock} />}
-        <CVCanvas document={document} selectedBlockId={selectedBlockId} dragId={dragId} dropTarget={dropTarget} preview={preview} onSelectBlock={(id) => { setSelectedBlockId(id); if (id && !['text', 'heading'].includes(allBlocks.find((block) => block.id === id)?.type ?? '')) setPropertiesOpen(true); }} onEditText={updateInlineText} onOpenProperties={() => setPropertiesOpen(true)} onMoveBlock={moveBlock} onDuplicateBlock={duplicateBlock} onDeleteBlock={deleteBlock} onPreset={(id, widths) => commit(setRowPreset(document, id, widths))} onDuplicateRow={duplicateRow} onDeleteRow={deleteRow} onResize={(id, index, width) => commit(resizeColumns(document, id, index, width))} onMoveColumn={(rowId, columnId, direction) => { const row = document.rows.find((item) => item.id === rowId); const index = row?.columns.findIndex((column) => column.id === columnId) ?? -1; const neighbor = row?.columns[index + direction]; if (neighbor) commit(moveColumn(document, rowId, columnId, neighbor.id)); }} onPlaceSelectedBlock={(rowId, columnId) => { if (selectedBlock) commit(moveBlockTo(document, selectedBlock, { kind: 'column', rowId, columnId, index: 0 })); }} />
-        {!preview && <PropertiesPanel selectedBlock={selectedBlock} globalStyle={document.globalStyle} open={propertiesOpen} onClose={() => setPropertiesOpen(false)} onDataChange={updateSelectedData} onStyleChange={updateSelectedStyle} onGlobalStyleChange={updateGlobalStyle} onDuplicate={() => { if (selectedBlockId) duplicateBlock(selectedBlockId); }} onDelete={() => { if (selectedBlockId) deleteBlock(selectedBlockId); }} />}
-=======
-  return <div className={`app-shell ${preview ? 'preview-mode' : ''}`}>
-    <Toolbar onRandomCV={generateRandomCV} blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto esportato'); }} onImportProject={importProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify('Nuovo CV creato'); }} />
+    <Toolbar theme={theme} onThemeChange={() => setTheme((current) => current === 'light' ? 'dark' : 'light')} onRandomCV={generateRandomCV} blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto esportato'); }} onImportProject={importProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify('Nuovo CV creato'); }} />
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => { dragGeometry.current = null; setDragId(null); setDropTarget(null); }}>
       <div ref={editorLayoutRef} className="editor-layout" style={{ '--blocks-panel-width': `${panelLayout.blocksCollapsed ? 48 : panelLayout.blocksWidth}px`, '--properties-panel-width': `${panelLayout.propertiesCollapsed ? 48 : panelLayout.propertiesWidth}px` } as CSSProperties}>
         {!preview && <BlocksSidebar onAdd={addBlock} collapsed={panelLayout.blocksCollapsed} onToggle={() => togglePanel('blocks')} />}
@@ -285,7 +284,6 @@ export default function App() {
         <CVCanvas document={document} selectedBlockId={selectedBlockId} dragId={dragId} dropTarget={dropTarget} preview={preview} onSelectBlock={(id) => { setSelectedBlockId(id); if (id && !['text', 'heading'].includes(allBlocks.find((block) => block.id === id)?.type ?? '')) setPropertiesOpen(true); }} onEditText={updateInlineText} onOpenProperties={() => { setPropertiesOpen(true); if (panelLayout.propertiesCollapsed) togglePanel('properties'); }} onMoveBlock={moveBlock} onDuplicateBlock={duplicateBlock} onDeleteBlock={deleteBlock} onPreset={(id, widths) => commit(setRowPreset(document, id, widths))} onDuplicateRow={duplicateRow} onDeleteRow={deleteRow} onResize={(id, index, width) => commit(resizeColumns(document, id, index, width))} onMoveColumn={(rowId, columnId, direction) => { const row = document.rows.find((item) => item.id === rowId); const index = row?.columns.findIndex((column) => column.id === columnId) ?? -1; const neighbor = row?.columns[index + direction]; if (neighbor) commit(moveColumn(document, rowId, columnId, neighbor.id)); }} onPlaceSelectedBlock={(rowId, columnId) => { if (selectedBlock) commit(moveBlockTo(document, selectedBlock, { kind: 'column', rowId, columnId, index: 0 })); }} />
         {!preview && <PanelResizeHandle side="properties" width={panelLayout.propertiesWidth} disabled={panelLayout.propertiesCollapsed} layoutRef={editorLayoutRef} onResize={(width) => setPanelWidth('properties', width)} />}
         {!preview && <PropertiesPanel selectedBlock={selectedBlock} globalStyle={document.globalStyle} open={propertiesOpen} onClose={() => setPropertiesOpen(false)} collapsed={panelLayout.propertiesCollapsed} onToggle={() => togglePanel('properties')} onDataChange={updateSelectedData} onStyleChange={updateSelectedStyle} onGlobalStyleChange={updateGlobalStyle} onLoadFontForBlock={loadFontForSelectedBlock} onRemoveFont={removeCustomFont} onDuplicate={() => { if (selectedBlockId) duplicateBlock(selectedBlockId); }} onDelete={() => { if (selectedBlockId) deleteBlock(selectedBlockId); }} />}
->>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
       </div>
       <DragOverlay>{activeBlock ? <div className="drag-overlay-block"><BlockPreview block={activeBlock} /></div> : dragId?.startsWith('column:') ? <div className="drag-overlay">Colonna · rilascia su un'altra colonna della riga</div> : dragId?.startsWith('row:') ? <div className="drag-overlay">⠿ Riga completa</div> : dragId?.startsWith('palette:') ? <div className="drag-overlay">{blockCatalog.find((item) => item.type === dragId.slice(8))?.label}</div> : null}</DragOverlay>
     </DndContext>
