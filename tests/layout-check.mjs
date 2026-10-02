@@ -4,7 +4,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const sourceFiles = ['src/utils/layout.ts', 'src/models/createBlock.ts', 'src/store/initialDocument.ts', 'src/utils/documentStorage.ts'];
+const sourceFiles = ['src/utils/layout.ts', 'src/utils/assets.ts', 'src/models/createBlock.ts', 'src/store/initialDocument.ts', 'src/utils/documentStorage.ts'];
 for (const path of sourceFiles) {
   const source = await readFile(path, 'utf8');
   const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText.replace(/(from\s+['"])(\.\.?\/[^'"]+)(['"])/g, '$1$2.mjs$3');
@@ -73,5 +73,16 @@ assert.deepEqual(parseDocument(raw), raw);
 assert.equal(layout.blocksOf(parseDocument(initialDocument)).length, initialDocument.blocks.length);
 assert.equal(parseDocument(initialDocument).rows.length, initialDocument.blocks.length);
 assert.equal(parseDocument(initialDocument).version, 2);
+const oldData = structuredClone(raw);
+const oldSkills = oldData.rows.flatMap((row) => row.columns.flatMap((column) => column.blocks)).find((block) => block.type === 'skills');
+oldSkills.data = { layout: 'inline', items: ['Design'], groups: [] };
+const oldLanguages = oldData.rows.flatMap((row) => row.columns.flatMap((column) => column.blocks)).find((block) => block.type === 'languages');
+oldLanguages.data = { items: [{ language: 'Español', proficiency: 'B2' }] };
+const migrated = parseDocument(oldData);
+const migratedSkills = layout.blocksOf(migrated).find((block) => block.type === 'skills');
+const migratedLanguages = layout.blocksOf(migrated).find((block) => block.type === 'languages');
+assert.deepEqual(migratedSkills.data.ratings, [3]);
+assert.equal(migratedSkills.data.columns, 2);
+assert.deepEqual(migratedLanguages.data.items, [{ language: 'Español', spoken: 'B2', written: 'B2' }]);
 assert.throws(() => parseDocument({ ...raw, rows: [{ ...raw.rows[0], columns: raw.rows[0].columns.map((column) => ({ ...column, width: 80 })) }] }));
 console.log('Layout and migration checks passed');

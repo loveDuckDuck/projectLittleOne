@@ -1,3 +1,5 @@
+import type { ProfilePhotoShape } from './profilePhoto';
+
 export type CVBlockType =
   | 'personal'
   | 'text'
@@ -12,7 +14,10 @@ export type CVBlockType =
   | 'certifications'
   | 'divider'
   | 'spacer'
+  | 'image'
   | 'custom';
+
+export type BackgroundMode = 'cover' | 'contain' | 'stretch' | 'tile' | 'center' | 'span';
 
 export interface BlockStyle {
   fontSize?: number;
@@ -23,8 +28,16 @@ export interface BlockStyle {
   marginBottom?: number;
   textColor?: string;
   accentColor?: string;
+<<<<<<< HEAD
   contactLayout?: 'inline' | '1' | '2' | '3';
   showContactIcons?: boolean;
+=======
+  fontFamily?: string;
+  backgroundColor?: string;
+  backgroundOpacity?: number;
+  backgroundImage?: string;
+  backgroundMode?: BackgroundMode;
+>>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
   header?: BlockHeaderStyle;
 }
 
@@ -60,6 +73,12 @@ export interface PersonalData {
   github: string;
   website: string;
   summary: string;
+  photoSrc: string;
+  photoPosition: 'left' | 'right';
+  photoShape: ProfilePhotoShape;
+  photoSize: number;
+  contactsLayout: 'inline' | 'list';
+  contactsColumns: 1 | 2 | 3;
 }
 
 export interface ExperienceData {
@@ -84,9 +103,17 @@ export interface EducationData {
 }
 
 export interface SkillsData {
-  layout: 'list' | 'inline' | 'grouped';
+  layout: 'list' | 'inline' | 'grouped' | 'rated';
   items: string[];
+  ratings: number[];
+  columns: 1 | 2 | 3;
   groups: { name: string; items: string[] }[];
+}
+
+export interface LanguageItem {
+  language: string;
+  spoken: string;
+  written: string;
 }
 
 export interface CVBlockDataMap {
@@ -98,12 +125,13 @@ export interface CVBlockDataMap {
   bulletList: { items: string[]; marker: 'disc' | 'circle' | 'square' };
   skills: SkillsData;
   hobbies: { items: string[] };
-  languages: { items: { language: string; proficiency: string }[] };
+  languages: { items: LanguageItem[] };
   projects: { title: string; role: string; dates: string; description: string; url: string; bullets: string[] };
   certifications: { title: string; issuer: string; date: string; url: string };
   divider: { thickness: number; width: number };
   spacer: { height: number };
-  custom: { title: string; body: string };
+  image: { src: string; alt: string; width: number; height: number; fit: 'contain' | 'cover' };
+  custom: { title: string; body: string; bullets: string[] };
 }
 
 export type CVBlock = {
@@ -116,9 +144,14 @@ export type CVBlock = {
 }[CVBlockType];
 
 export interface GlobalCVStyle {
-  fontFamily: 'Arial' | 'Helvetica' | 'Georgia' | 'Times New Roman' | 'Verdana';
+  fontFamily: string;
+  customFont?: { name: string; dataUrl: string };
   textColor: string;
   accentColor: string;
+  backgroundColor?: string;
+  backgroundOpacity?: number;
+  backgroundImage?: string;
+  backgroundMode?: BackgroundMode;
   baseFontSize: number;
   pageMargin: number;
   sectionSpacing: number;

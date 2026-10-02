@@ -16,18 +16,45 @@ export const locateBlock = (document: CVDocument, id: string) => {
   return null;
 };
 
+export function sideColumnLayout(row: CVRow, columnId: string, side: 'left' | 'right') {
+  const columnIndex = row.columns.findIndex((column) => column.id === columnId);
+  if (columnIndex < 0 || row.columns.length >= 3) return null;
+  const widths = row.columns.map((column) => column.width);
+  const sharedWidth = row.columns.length === 1 ? 100 : Math.max(40, widths[columnIndex]);
+  if (row.columns.length === 2) widths[1 - columnIndex] = 100 - sharedWidth;
+  widths[columnIndex] = Math.floor(sharedWidth / 2);
+  const insertionIndex = columnIndex + (side === 'right' ? 1 : 0);
+  widths.splice(insertionIndex, 0, sharedWidth - Math.floor(sharedWidth / 2));
+  return { widths, insertionIndex };
+}
+
 export function mapBlock(document: CVDocument, id: string, update: (block: CVBlock) => CVBlock): CVDocument {
   return { ...document, rows: document.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.map((block) => block.id === id ? update(block) : block) })) })) };
 }
 
+function compactRow(row: CVRow): CVRow | null {
+  const columns = row.columns.filter((column) => column.blocks.length > 0);
+  if (columns.length === 0) return null;
+  if (columns.length === row.columns.length) return row;
+  const total = columns.reduce((sum, column) => sum + column.width, 0);
+  let assigned = 0;
+  return { ...row, columns: columns.map((column, index) => {
+    const width = index === columns.length - 1 ? 100 - assigned : Math.round(column.width / total * 100);
+    assigned += width;
+    return { ...column, width };
+  }) };
+}
+
 export function removeBlock(document: CVDocument, id: string): CVDocument {
-  return { ...document, rows: document.rows.map((row) => {
-    const columns = row.columns.map((column) => ({ ...column, blocks: column.blocks.filter((block) => block.id !== id) }))
-      .filter((column, index, all) => column.blocks.length > 0 || row.columns[index].blocks.length === 0 || !all.some((item) => item.blocks.length > 0));
-    const total = columns.reduce((sum, column) => sum + column.width, 0);
-    const normalized = columns.map((column, index) => ({ ...column, width: index === columns.length - 1 ? 100 - columns.slice(0, -1).reduce((sum, item) => sum + Math.round(item.width / total * 100), 0) : Math.round(column.width / total * 100) }));
-    return { ...row, columns: normalized };
-  }).filter((row) => row.columns.some((column) => column.blocks.length > 0) || row.columns.length > 1) };
+  const source = locateBlock(document, id);
+  if (!source) return document;
+  return { ...document, rows: document.rows.flatMap((row) => {
+    if (row.id !== source.row.id) return [row];
+    const columns = row.columns.map((column) => ({ ...column, blocks: column.blocks.filter((block) => block.id !== id) }));
+    const updated = columns.find((column) => column.id === source.column.id)?.blocks.length === 0
+      ? compactRow({ ...row, columns }) : { ...row, columns };
+    return updated ? [updated] : [];
+  }) };
 }
 
 export function placeBlock(document: CVDocument, block: CVBlock, target: DropTarget | null): CVDocument {
@@ -43,17 +70,11 @@ export function placeBlock(document: CVDocument, block: CVBlock, target: DropTar
     if (!column) return document;
     column.blocks.splice(Math.max(0, Math.min(target.index, column.blocks.length)), 0, block);
   } else {
-    const columnIndex = row.columns.findIndex((item) => item.id === target.columnId);
-    if (columnIndex < 0 || row.columns.length >= 3) return document;
-    const selectedColumn = row.columns[columnIndex];
-    const sharedWidth = row.columns.length === 1 ? 100 : Math.max(40, selectedColumn.width);
-    if (row.columns.length === 2) {
-      const neighbor = row.columns[1 - columnIndex];
-      neighbor.width = 100 - sharedWidth;
-    }
-    selectedColumn.width = Math.floor(sharedWidth / 2);
-    const newColumn: CVColumn = { id: crypto.randomUUID(), width: sharedWidth - selectedColumn.width, blocks: [block] };
-    row.columns.splice(columnIndex + (target.side === 'right' ? 1 : 0), 0, newColumn);
+    const layout = sideColumnLayout(row, target.columnId, target.side);
+    if (!layout) return document;
+    const newColumn: CVColumn = { id: crypto.randomUUID(), width: layout.widths[layout.insertionIndex], blocks: [block] };
+    row.columns.splice(layout.insertionIndex, 0, newColumn);
+    row.columns.forEach((column, index) => { column.width = layout.widths[index]; });
   }
   return { ...document, rows };
 }
@@ -71,7 +92,11 @@ export function moveBlockTo(document: CVDocument, block: CVBlock, target: DropTa
   const without = { ...document, rows: document.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.filter((item) => item.id !== block.id) })) })) };
   const placed = placeBlock(without, block, target);
   if (!locateBlock(placed, block.id)) return document;
-  return { ...placed, rows: placed.rows.filter((row) => row.columns.length > 1 || row.columns.some((column) => column.blocks.length > 0)) };
+  return { ...placed, rows: placed.rows.flatMap((row) => {
+    if (row.id !== source.row.id || row.columns.find((column) => column.id === source.column.id)?.blocks.length) return [row];
+    const updated = compactRow(row);
+    return updated ? [updated] : [];
+  }) };
 }
 
 export function setRowPreset(document: CVDocument, rowId: string, widths: readonly number[]): CVDocument {

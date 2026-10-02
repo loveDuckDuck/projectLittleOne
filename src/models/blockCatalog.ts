@@ -20,6 +20,7 @@ export const blockCatalog: BlockCatalogItem[] = [
   { type: 'projects', label: 'Progetti', description: 'Lavori selezionati', icon: '◇' },
   { type: 'certifications', label: 'Certificazioni', description: 'Attestati e licenze', icon: '✧' },
   { type: 'custom', label: 'Sezione libera', description: 'Contenuto personalizzato', icon: '⊞' },
+  { type: 'image', label: 'Immagine', description: 'Foto o elemento grafico', icon: '▧' },
   { type: 'divider', label: 'Separatore', description: 'Linea orizzontale', icon: '―' },
   { type: 'spacer', label: 'Spazio', description: 'Distanza verticale', icon: '↕' },
 ];

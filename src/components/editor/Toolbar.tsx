@@ -1,5 +1,10 @@
 import { useRef, useState } from 'react';
+<<<<<<< HEAD
 import { Moon, Sun } from 'lucide-react';
+=======
+import { RandomCVDialog } from './RandomCVDialog';
+import type { RandomCVOptions } from '../../models/randomDocument';
+>>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
 import packageInfo from '../../../package.json';
 
 interface ToolbarProps {
@@ -18,19 +23,26 @@ interface ToolbarProps {
   onImportProject: (file: File) => void;
   onExportPdf: () => void;
   onNewCV: (empty: boolean) => void;
+  onRandomCV: (options: RandomCVOptions) => boolean;
 }
 
+<<<<<<< HEAD
 export function Toolbar({ theme, onThemeChange, blockCount, saveStatus, preview, canUndo, canRedo, exporting, onPreviewChange, onUndo, onRedo, onExportProject, onImportProject, onExportPdf, onNewCV }: ToolbarProps) {
+=======
+export function Toolbar({ blockCount, saveStatus, preview, canUndo, canRedo, exporting, onPreviewChange, onUndo, onRedo, onExportProject, onImportProject, onExportPdf, onNewCV, onRandomCV }: ToolbarProps) {
+>>>>>>> 496faddb02157e683716d5399c7b4a8160cf4dd8
   const fileRef = useRef<HTMLInputElement>(null);
+  const [showRandomDialog, setShowRandomDialog] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   return <>
     <header className="toolbar">
       <div className="toolbar-brand"><span className="brand-mark" aria-hidden="true">CV</span><div><strong>CV Builder</strong><span>Beta {packageInfo.version}</span></div><button type="button" className="theme-toggle" role="switch" aria-checked={theme === 'dark'} aria-label="Modalità scura" title={theme === 'dark' ? 'Passa alla modalità chiara' : 'Passa alla modalità scura'} onClick={onThemeChange}><Sun size={15} aria-hidden="true" /><Moon size={15} aria-hidden="true" /><span className="theme-toggle-thumb" aria-hidden="true" /></button></div>
       <div className="toolbar-document"><span className={`document-dot ${saveStatus}`} aria-hidden="true" />Il mio curriculum<span className="toolbar-count">{blockCount} blocchi · {saveStatus === 'saved' ? 'Salvato' : saveStatus === 'saving' ? 'Salvataggio...' : 'Errore salvataggio'}</span></div>
       <div className="toolbar-actions">
-        {preview ? <><button type="button" onClick={() => onPreviewChange(false)}>Torna all'editor</button><button type="button" className="button-primary" onClick={onExportPdf} disabled={exporting}>{exporting ? 'Esportazione...' : 'Esporta PDF'}</button></> : <>
+        {preview ? <><button type="button" title="Esci dall’anteprima (Esc)" onClick={() => onPreviewChange(false)}>Torna all'editor <span className="shortcut-hint">Esc</span></button><button type="button" className="button-primary" onClick={onExportPdf} disabled={exporting}>{exporting ? 'Esportazione...' : 'Esporta PDF'}</button></> : <>
         <button type="button" onClick={() => setShowNewDialog(true)}>Nuovo CV</button>
-        <button type="button" onClick={() => onPreviewChange(!preview)}>{preview ? 'Modifica' : 'Anteprima'}</button>
+        <button type="button" onClick={() => setShowRandomDialog(true)}>CV casuale</button>
+        <button type="button" title="Attiva/disattiva anteprima (Ctrl+A)" onClick={() => onPreviewChange(!preview)}>Anteprima <span className="shortcut-hint">Ctrl+A</span></button>
         <span className="toolbar-separator" aria-hidden="true" />
         <button type="button" onClick={onUndo} disabled={!canUndo} title="Annulla (Ctrl+Z)">↶ <span>Annulla</span></button>
         <button type="button" onClick={onRedo} disabled={!canRedo} title="Ripristina (Ctrl+Shift+Z)">↷ <span>Ripristina</span></button>
@@ -42,6 +54,7 @@ export function Toolbar({ theme, onThemeChange, blockCount, saveStatus, preview,
         </>}
       </div>
     </header>
+    {showRandomDialog && <RandomCVDialog onGenerate={onRandomCV} onClose={() => setShowRandomDialog(false)} />}
     {showNewDialog && <div className="modal-backdrop" role="presentation" onClick={() => setShowNewDialog(false)}><div className="new-cv-dialog" role="dialog" aria-modal="true" aria-labelledby="new-cv-title" onClick={(event) => event.stopPropagation()}><h2 id="new-cv-title">Creare un nuovo CV?</h2><p>Il CV attuale sarà sostituito. Puoi recuperarlo con Annulla finché la pagina rimane aperta; esportalo in JSON se vuoi conservarlo.</p><div className="dialog-actions"><button type="button" onClick={() => setShowNewDialog(false)}>Annulla</button><button type="button" onClick={() => { onNewCV(true); setShowNewDialog(false); }}>CV vuoto</button><button type="button" className="button-primary" onClick={() => { onNewCV(false); setShowNewDialog(false); }}>Con esempio</button></div></div></div>}
   </>;
 }

@@ -1,5 +1,5 @@
 import { useDraggable } from '@dnd-kit/core';
-import { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { blockCatalog, type BlockCatalogItem } from '../../models/blockCatalog';
 import type { CVBlockType } from '../../models/cv';
 
@@ -15,10 +15,10 @@ function PaletteItem({ item, onAdd }: { item: BlockCatalogItem; onAdd: (type: CV
   </div>;
 }
 
-export function BlocksSidebar({ onAdd }: { onAdd: (type: CVBlockType) => void }) {
-  const [collapsed, setCollapsed] = useState(false);
-  return <aside className="side-panel blocks-panel" aria-labelledby="blocks-title">
-    <div className="panel-heading"><span className="eyebrow">Libreria</span><h2 id="blocks-title">Blocchi</h2><p>Trascina un blocco nel CV oppure premi + per aggiungerlo sotto quello selezionato.</p><button type="button" className="panel-toggle" onClick={() => setCollapsed(!collapsed)} aria-expanded={!collapsed}>{collapsed ? 'Mostra blocchi' : 'Nascondi blocchi'}</button></div>
-    <div className={`panel-body ${collapsed ? 'is-collapsed' : ''}`}><div className="block-list">{blockCatalog.map((item) => <PaletteItem key={item.type} item={item} onAdd={onAdd} />)}</div></div>
+export function BlocksSidebar({ onAdd, collapsed, onToggle }: { onAdd: (type: CVBlockType) => void; collapsed: boolean; onToggle: () => void }) {
+  return <aside className={`side-panel blocks-panel ${collapsed ? 'is-collapsed' : ''}`} aria-labelledby="blocks-title">
+    <button type="button" className="panel-rail-button" onClick={onToggle} aria-label="Espandi libreria blocchi" aria-expanded={false} title="Espandi libreria blocchi"><ChevronRight size={18} /><span>Libreria blocchi</span></button>
+    <div className="panel-heading"><span className="eyebrow">Libreria</span><h2 id="blocks-title">Blocchi</h2><p>Trascina un blocco nel CV oppure premi + per aggiungerlo sotto quello selezionato.</p><button type="button" className="panel-collapse-button" onClick={onToggle} aria-label="Comprimi libreria blocchi" aria-expanded={true} title="Comprimi libreria blocchi"><ChevronLeft size={17} /></button></div>
+    <div className="panel-body"><div className="block-list">{blockCatalog.map((item) => <PaletteItem key={item.type} item={item} onAdd={onAdd} />)}</div></div>
   </aside>;
 }
