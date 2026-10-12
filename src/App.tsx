@@ -3,6 +3,9 @@ import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, 
 import { CVCanvas } from './components/editor/CVCanvas';
 import { BlockPreview } from './components/editor/BlockPreview';
 import { PanelResizeHandle } from './components/editor/PanelResizeHandle';
+import { NewCVDialog } from './components/editor/NewCVDialog';
+import { ProjectsDialog } from './components/editor/ProjectsDialog';
+import { createTemplate, type TemplateId } from './models/templates';
 import { Toolbar } from './components/editor/Toolbar';
 import { PropertiesPanel } from './components/properties/PropertiesPanel';
 import { BlocksSidebar } from './components/sidebar/BlocksSidebar';
@@ -18,7 +21,7 @@ import { downloadProject, parseDocument } from './utils/documentStorage';
 import { exportPdf } from './utils/exportPdf';
 import { CUSTOM_FONT_FAMILY } from './utils/assets';
 
-interface Toast { id: number; message: string; error?: boolean }
+interface Toast { id: number; message: string; error?: boolean; action?: () => void }
 interface DragGeometry {
   page: { left: number; top: number; right: number; bottom: number };
   rows: { id: string; top: number; bottom: number; columns: { id: string; left: number; right: number; top: number; bottom: number; blocks: { id: string; left: number; right: number; top: number; bottom: number }[] }[] }[];
@@ -26,8 +29,15 @@ interface DragGeometry {
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
-  const { document, canUndo, canRedo, saveStatus, commit, replace, undo, redo } = useCVDocument();
+  const { document, canUndo, canRedo, saveStatus, commit, undo, redo, projectId, projects, newProject, openProject: loadProject } = useCVDocument();
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const documentRef = useRef(document);
+  documentRef.current = document;
+  const [showNewDialog, setShowNewDialog] = useState(projects.length === 0);
+  const [showProjects, setShowProjects] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [editRequest, setEditRequest] = useState<{ field?: string; token: number }>({ token: 0 });
+  const [guideStep, setGuideStep] = useState<'data' | 'experience' | 'review'>('data');
   const [preview, setPreview] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
@@ -44,15 +54,14 @@ export default function App() {
   const selectedBlock = allBlocks.find((block) => block.id === selectedBlockId) ?? null;
   const activeBlock = allBlocks.find((block) => block.id === dragId);
 
-  function notify(message: string, error = false) { setToast({ id: Date.now(), message, error }); }
+  function notify(message: string, error = false, action?: () => void) { setToast({ id: Date.now(), message, error, action }); }
   useEffect(() => {
-    if (lastSaveStatus.current === 'saving' && saveStatus === 'saved' && canUndo) notify('CV salvato');
     if (saveStatus === 'error' && lastSaveStatus.current !== 'error') notify('Salvataggio locale non riuscito', true);
     lastSaveStatus.current = saveStatus;
   }, [saveStatus, canUndo]);
   useEffect(() => {
     if (!toast) return;
-    const timer = window.setTimeout(() => setToast((current) => current?.id === toast.id ? null : current), 3500);
+    const timer = window.setTimeout(() => setToast((current) => current?.id === toast.id ? null : current), toast.action ? 10000 : 3500);
     return () => window.clearTimeout(timer);
   }, [toast]);
   useEffect(() => {
@@ -65,7 +74,7 @@ export default function App() {
         return;
       }
       if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
-      if (allBlocks.length > 0 && event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'a') {
+      if (allBlocks.length > 0 && event.altKey && !event.ctrlKey && !event.metaKey && (event.code === 'KeyP' || event.key.toLowerCase() === 'p')) {
         event.preventDefault();
         setPreview((current) => !current);
         setSelectedBlockId(null);
@@ -86,6 +95,9 @@ export default function App() {
     commit(placeBlock(document, block, destination));
     setSelectedBlockId(block.id);
     setPropertiesOpen(true);
+    if (panelLayout.propertiesCollapsed) togglePanel('properties');
+    setLibraryOpen(false);
+    setEditRequest({ token: Date.now() });
     notify('Sezione aggiunta');
   }
   function moveBlock(id: string, direction: -1 | 1) {
@@ -107,10 +119,19 @@ export default function App() {
     setSelectedBlockId(copy.id);
   }
   function deleteBlock(id: string) {
-    if (!locateBlock(document, id)) return;
-    commit(removeBlock(document, id));
+    const found = locateBlock(document, id);
+    if (!found) return;
+    const removed = found.column.blocks[found.index];
+    const next = removeBlock(document, id);
+    commit(next);
     if (selectedBlockId === id) setSelectedBlockId(null);
-    notify('Sezione eliminata · Annulla per ripristinarla');
+    notify('Sezione eliminata', false, () => {
+      if (documentRef.current === next) undo();
+      else if (!locateBlock(documentRef.current, id)) {
+        const exists = documentRef.current.rows.some((row) => row.id === found.row.id && row.columns.some((column) => column.id === found.column.id));
+        commit(placeBlock(documentRef.current, removed, exists ? { kind: 'column', rowId: found.row.id, columnId: found.column.id, index: found.index } : null));
+      }
+    });
   }
   function duplicateRow(id: string) {
     const index = document.rows.findIndex((row) => row.id === id);
@@ -120,7 +141,19 @@ export default function App() {
     copy.columns.forEach((column) => { column.id = crypto.randomUUID(); column.blocks.forEach((block) => { block.id = crypto.randomUUID(); }); });
     const rows = [...document.rows]; rows.splice(index + 1, 0, copy); commit({ ...document, rows });
   }
-  function deleteRow(id: string) { commit({ ...document, rows: document.rows.filter((row) => row.id !== id) }); setSelectedBlockId(null); }
+  function deleteRow(id: string) {
+    const row = document.rows.find((item) => item.id === id);
+    if (!row) return;
+    const index = document.rows.indexOf(row);
+    const next = { ...document, rows: document.rows.filter((item) => item.id !== id) };
+    commit(next); setSelectedBlockId(null);
+    notify('Riga eliminata', false, () => {
+      if (documentRef.current === next) undo();
+      else if (!documentRef.current.rows.some((item) => item.id === id)) {
+        const rows = [...documentRef.current.rows]; rows.splice(index, 0, row); commit({ ...documentRef.current, rows });
+      }
+    });
+  }
   function updateSelectedData(data: CVBlock['data']) {
     if (!selectedBlockId) return;
     commit(mapBlock(document, selectedBlockId, (block) => {
@@ -245,11 +278,11 @@ export default function App() {
 
   function generateRandomCV(options: RandomCVOptions): boolean {
     try {
-      replace(createRandomDocument(options));
+      newProject({ ...createRandomDocument(options), name: 'CV fittizio' });
       setSelectedBlockId(null);
       setPropertiesOpen(false);
       setPreview(false);
-      notify('CV fittizio generato · Annulla per recuperare il precedente');
+      notify('CV fittizio creato · Il precedente è in I miei CV');
       return true;
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Generazione del CV non riuscita.', true);
@@ -258,29 +291,61 @@ export default function App() {
   }
 
   async function importProject(file: File) {
-    try { const parsed: unknown = JSON.parse(await file.text()); replace(parseDocument(parsed)); setSelectedBlockId(null); setPreview(false); notify('Progetto importato'); }
+    try { const parsed: unknown = JSON.parse(await file.text()); newProject(parseDocument(parsed)); setSelectedBlockId(null); setPreview(false); notify('Progetto importato'); }
     catch (error) { notify(error instanceof Error ? error.message : 'File JSON non valido.', true); }
   }
   function openProject() { importFileRef.current?.click(); }
   async function downloadPdf() {
     setExporting(true);
-    try { await exportPdf(); notify('PDF esportato'); }
+    try { await exportPdf(document.name); notify('PDF esportato'); }
     catch (error) { notify(error instanceof Error ? `PDF: ${error.message}` : 'Esportazione PDF non riuscita.', true); }
     finally { setExporting(false); }
   }
+  function selectBlock(id: string | null, field?: string) {
+    setSelectedBlockId(id);
+    if (!id) return;
+    setPropertiesOpen(true);
+    if (panelLayout.propertiesCollapsed) togglePanel('properties');
+    setEditRequest({ field, token: Date.now() });
+    const block = allBlocks.find((item) => item.id === id);
+    if (block?.type === 'personal') setGuideStep('data');
+    else setGuideStep('experience');
+  }
+  function createProject(template: TemplateId | 'empty') {
+    try {
+      newProject(template === 'empty' ? { ...createStarterDocument(true), name: 'Nuovo CV' } : createTemplate(template));
+      setShowNewDialog(false); setSelectedBlockId(null); setPropertiesOpen(false); setPreview(false); setGuideStep('data'); setToast(null);
+    } catch { notify('Impossibile creare il progetto. Scarica una copia modificabile e libera spazio nel browser.', true); }
+  }
+  function openSavedProject(id: string): boolean {
+    try { loadProject(id); setSelectedBlockId(null); setPropertiesOpen(false); setPreview(false); setToast(null); return true; }
+    catch (error) { notify(error instanceof Error ? error.message : 'Impossibile aprire il progetto.', true); return false; }
+  }
+  function goToStep(step: 'data' | 'experience' | 'review') {
+    setGuideStep(step);
+    setPreview(step === 'review');
+    if (step === 'review') { setSelectedBlockId(null); return; }
+    const type = step === 'data' ? 'personal' : 'experience';
+    const block = allBlocks.find((item) => item.type === type);
+    if (block) selectBlock(block.id); else addBlock(type);
+  }
   return <div className={`app-shell ${preview ? 'preview-mode' : ''}`}>
-    <Toolbar theme={theme} onThemeChange={toggleTheme} onRandomCV={generateRandomCV} blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto scaricato'); }} onImportClick={openProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify(empty ? 'CV vuoto creato' : 'Esempio pronto da personalizzare'); }} />
+    <Toolbar theme={theme} onThemeChange={toggleTheme} onRandomCV={generateRandomCV} blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto scaricato'); }} onImportClick={openProject} onExportPdf={downloadPdf} documentName={document.name || 'Il mio CV'} onRename={(name) => commit({ ...document, name })} onProjects={() => setShowProjects(true)} onNewCV={() => setShowNewDialog(true)} />
+    {showNewDialog && <NewCVDialog onCreate={createProject} onClose={() => setShowNewDialog(false)} />}
+    {showProjects && <ProjectsDialog projects={projects} activeId={projectId} onOpen={openSavedProject} onClose={() => setShowProjects(false)} />}
+    {!preview && <button type="button" className="mobile-add-section" onClick={() => setLibraryOpen(true)}>+ Aggiungi sezione</button>}
+    {libraryOpen && <button type="button" className="library-backdrop" aria-label="Chiudi libreria sezioni" onClick={() => setLibraryOpen(false)} />}
     <input ref={importFileRef} className="visually-hidden" type="file" accept=".json,application/json" aria-label="Apri progetto JSON" tabIndex={-1} onChange={(event) => { const file = event.target.files?.[0]; if (file) void importProject(file); event.target.value = ''; }} />
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => { dragGeometry.current = null; setDragId(null); setDropTarget(null); }}>
       <div ref={editorLayoutRef} className="editor-layout" style={{ '--blocks-panel-width': `${panelLayout.blocksCollapsed ? 48 : panelLayout.blocksWidth}px`, '--properties-panel-width': `${panelLayout.propertiesCollapsed ? 48 : panelLayout.propertiesWidth}px` } as CSSProperties}>
-        {!preview && <BlocksSidebar onAdd={addBlock} collapsed={panelLayout.blocksCollapsed} onToggle={() => togglePanel('blocks')} />}
+        {!preview && <BlocksSidebar open={libraryOpen} onClose={() => setLibraryOpen(false)} onAdd={addBlock} collapsed={panelLayout.blocksCollapsed} onToggle={() => togglePanel('blocks')} />}
         {!preview && <PanelResizeHandle side="blocks" width={panelLayout.blocksWidth} disabled={panelLayout.blocksCollapsed} layoutRef={editorLayoutRef} onResize={(width) => setPanelWidth('blocks', width)} />}
-        <CVCanvas document={document} selectedBlockId={selectedBlockId} dragId={dragId} dropTarget={dropTarget} preview={preview} onSelectBlock={(id) => { setSelectedBlockId(id); if (id && !['text', 'heading'].includes(allBlocks.find((block) => block.id === id)?.type ?? '')) setPropertiesOpen(true); }} onEditText={updateInlineText} onOpenProperties={() => { setPropertiesOpen(true); if (panelLayout.propertiesCollapsed) togglePanel('properties'); }} onStartExample={() => { replace(createStarterDocument(false)); setSelectedBlockId(null); setPreview(false); notify('Esempio pronto da personalizzare'); }} onStartEmpty={() => { replace(createStarterDocument(true)); setSelectedBlockId(null); setPreview(false); notify('CV vuoto creato'); }} onImportProject={openProject} onAddBlock={addBlock} onMoveBlock={moveBlock} onDuplicateBlock={duplicateBlock} onDeleteBlock={deleteBlock} onPreset={(id, widths) => commit(setRowPreset(document, id, widths))} onDuplicateRow={duplicateRow} onDeleteRow={deleteRow} onResize={(id, index, width) => commit(resizeColumns(document, id, index, width))} onMoveColumn={(rowId, columnId, direction) => { const row = document.rows.find((item) => item.id === rowId); const index = row?.columns.findIndex((column) => column.id === columnId) ?? -1; const neighbor = row?.columns[index + direction]; if (neighbor) commit(moveColumn(document, rowId, columnId, neighbor.id)); }} onPlaceSelectedBlock={(rowId, columnId) => { if (selectedBlock) commit(moveBlockTo(document, selectedBlock, { kind: 'column', rowId, columnId, index: 0 })); }} />
+        <CVCanvas projectId={projectId} document={document} selectedBlockId={selectedBlockId} dragId={dragId} dropTarget={dropTarget} preview={preview} onSelectBlock={selectBlock} onEditText={updateInlineText} onOpenProperties={() => { setPropertiesOpen(true); if (panelLayout.propertiesCollapsed) togglePanel('properties'); }} guideStep={guideStep} onGuideStep={goToStep} onStartExample={() => setShowNewDialog(true)} onStartEmpty={() => createProject('empty')} onImportProject={openProject} onAddBlock={addBlock} onMoveBlock={moveBlock} onMoveBlockTo={(id, target) => { const block = allBlocks.find((item) => item.id === id); if (block) commit(moveBlockTo(document, block, target)); }} onDuplicateBlock={duplicateBlock} onDeleteBlock={deleteBlock} onPreset={(id, widths) => commit(setRowPreset(document, id, widths))} onDuplicateRow={duplicateRow} onDeleteRow={deleteRow} onResize={(id, index, width) => commit(resizeColumns(document, id, index, width))} onMoveColumn={(rowId, columnId, direction) => { const row = document.rows.find((item) => item.id === rowId); const index = row?.columns.findIndex((column) => column.id === columnId) ?? -1; const neighbor = row?.columns[index + direction]; if (neighbor) commit(moveColumn(document, rowId, columnId, neighbor.id)); }} onPlaceSelectedBlock={(rowId, columnId) => { if (selectedBlock) commit(moveBlockTo(document, selectedBlock, { kind: 'column', rowId, columnId, index: 0 })); }} />
         {!preview && <PanelResizeHandle side="properties" width={panelLayout.propertiesWidth} disabled={panelLayout.propertiesCollapsed} layoutRef={editorLayoutRef} onResize={(width) => setPanelWidth('properties', width)} />}
-        {!preview && <PropertiesPanel selectedBlock={selectedBlock} globalStyle={document.globalStyle} open={propertiesOpen} onClose={() => setPropertiesOpen(false)} collapsed={panelLayout.propertiesCollapsed} onToggle={() => togglePanel('properties')} onDataChange={updateSelectedData} onStyleChange={updateSelectedStyle} onGlobalStyleChange={updateGlobalStyle} onLoadFontForBlock={loadFontForSelectedBlock} onRemoveFont={removeCustomFont} onDuplicate={() => { if (selectedBlockId) duplicateBlock(selectedBlockId); }} onDelete={() => { if (selectedBlockId) deleteBlock(selectedBlockId); }} />}
+        {!preview && <PropertiesPanel editRequest={editRequest} selectedBlock={selectedBlock} globalStyle={document.globalStyle} open={propertiesOpen} onClose={() => setPropertiesOpen(false)} collapsed={panelLayout.propertiesCollapsed} onToggle={() => togglePanel('properties')} onDataChange={updateSelectedData} onStyleChange={updateSelectedStyle} onGlobalStyleChange={updateGlobalStyle} onLoadFontForBlock={loadFontForSelectedBlock} onRemoveFont={removeCustomFont} onDuplicate={() => { if (selectedBlockId) duplicateBlock(selectedBlockId); }} onDelete={() => { if (selectedBlockId) deleteBlock(selectedBlockId); }} />}
       </div>
       <DragOverlay>{activeBlock ? <div className="drag-overlay-block"><BlockPreview block={activeBlock} /></div> : dragId?.startsWith('column:') ? <div className="drag-overlay">Colonna · rilascia su un'altra colonna della riga</div> : dragId?.startsWith('row:') ? <div className="drag-overlay">⠿ Riga completa</div> : dragId?.startsWith('palette:') ? <div className="drag-overlay">{blockCatalog.find((item) => item.type === dragId.slice(8))?.label}</div> : null}</DragOverlay>
     </DndContext>
-    {toast && <div className={`toast ${toast.error ? 'is-error' : ''}`} role="status">{toast.message}</div>}
+    {toast && <div className={`toast ${toast.error ? 'is-error' : ''}`} role="status"><span>{toast.message}</span>{toast.action && <button type="button" onClick={() => { toast.action?.(); setToast(null); }}>Annulla</button>}</div>}
   </div>;
 }

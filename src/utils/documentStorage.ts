@@ -89,6 +89,7 @@ export function parseDocument(value: unknown): CVDocument {
   if (!isRecord(value) || ![1, 2].includes(value.version as number) || !isRecord(value.globalStyle)) {
     throw new Error('Il file non contiene un progetto CV Builder valido.');
   }
+  if ('name' in value && (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 120)) throw new Error('Il nome del progetto non è valido.');
   if (!matchesShape(value.globalStyle, createStarterDocument().globalStyle)) {
     throw new Error('Lo stile globale del progetto non è valido.');
   }
@@ -118,7 +119,7 @@ export function parseDocument(value: unknown): CVDocument {
     throw new Error('Uno o più blocchi del progetto non sono validi.');
   }
   const normalizedRows = (rows as CVDocument['rows']).map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: column.blocks.map((block) => ({ ...block, data: normalizedBlockData(block.type, block.data) } as CVBlock)) })) }));
-  return { version: 2, globalStyle: value.globalStyle as unknown as CVDocument['globalStyle'], rows: normalizedRows };
+  return { version: 2, ...(typeof value.name === 'string' ? { name: value.name } : {}), globalStyle: value.globalStyle as unknown as CVDocument['globalStyle'], rows: normalizedRows };
 }
 
 export function loadSavedDocument(): CVDocument {
@@ -142,7 +143,11 @@ export function downloadProject(cvDocument: CVDocument): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'cv-project.json';
+  link.download = `${projectFileName(cvDocument.name)}.json`;
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function projectFileName(name = 'Il mio CV'): string {
+  return name.trim().replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').slice(0, 100) || 'cv-project';
 }

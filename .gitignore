@@ -178,3 +178,7 @@ TODOs.md
 playground/glob-import/root/follow-symlinks/linked/my-lib
 # Transpiled fixtures for the random CV generator checks
 /tmp/random-check/
+
+# Generated usability review artifacts
+/tmp/usability-review/
+/.impeccable/critique/

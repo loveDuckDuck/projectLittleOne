@@ -167,6 +167,7 @@ export interface CVRow {
 
 export interface CVDocument {
   version: 2;
+  name?: string;
   rows: CVRow[];
   globalStyle: GlobalCVStyle;
 }

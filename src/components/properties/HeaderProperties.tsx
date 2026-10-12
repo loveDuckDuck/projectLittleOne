@@ -8,7 +8,7 @@ export function HeaderProperties({ block, onStyleChange }: { block: CVBlock; onS
   if (!sectionTypes.has(block.type)) return null;
   const header = block.style.header;
   const update = (patch: Partial<BlockHeaderStyle>) => { if (header) onStyleChange({ header: { ...header, ...patch } }); };
-  return <section className="property-section"><h3>Intestazione e icona</h3><p className="property-help">Per aggiungere un’icona, attiva “Mostra icona” e scegli un simbolo qui sotto. L’icona appare accanto al titolo della sezione.</p>
+  return <section className="property-section header-fields"><h3>Intestazione e icona</h3><p className="property-help">Per aggiungere un’icona, attiva “Mostra icona” e scegli un simbolo qui sotto. L’icona appare accanto al titolo della sezione.</p>
     {!header ? <button type="button" className="text-action" onClick={() => { const next = createBlock(block.type).style.header; onStyleChange({ header: next && block.type === 'custom' ? { ...next, title: block.data.title } : next }); }}>Aggiungi intestazione</button> : <>
       <label className="form-field"><span>Testo</span><input value={header.title} onChange={(event) => update({ title: event.target.value })} /></label>
       <label className="check-field"><input type="checkbox" checked={header.showIcon} onChange={(event) => update({ showIcon: event.target.checked })} />Mostra icona</label>

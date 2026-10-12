@@ -8,6 +8,7 @@ import { CUSTOM_FONT_FAMILY, readFont, STANDARD_FONTS } from '../../utils/assets
 import { BackgroundImageFields } from './BackgroundImageFields';
 
 interface PropertiesPanelProps {
+  editRequest: { field?: string; token: number };
   selectedBlock: CVBlock | null;
   open: boolean;
   onClose: () => void;
@@ -31,10 +32,24 @@ function Color({ label, value, onChange }: { label: string; value: string; onCha
   return <label className="form-field color-field"><span>{label}</span><input type="color" value={value} onChange={(event) => onChange(event.target.value)} /></label>;
 }
 
-export function PropertiesPanel({ selectedBlock, open, onClose, collapsed, onToggle, globalStyle, onDataChange, onStyleChange, onGlobalStyleChange, onLoadFontForBlock, onRemoveFont, onDuplicate, onDelete }: PropertiesPanelProps) {
+export function PropertiesPanel({ editRequest, selectedBlock, open, onClose, collapsed, onToggle, globalStyle, onDataChange, onStyleChange, onGlobalStyleChange, onLoadFontForBlock, onRemoveFont, onDuplicate, onDelete }: PropertiesPanelProps) {
   const [fontError, setFontError] = useState('');
   const panelRef = useRef<HTMLElement>(null);
-  useEffect(() => { panelRef.current?.scrollTo({ top: 0 }); }, [selectedBlock?.id]);
+  useEffect(() => {
+    if (!selectedBlock) return;
+    const frame = requestAnimationFrame(() => {
+      const panel = panelRef.current;
+      if (!panel || getComputedStyle(panel).display === 'none') return;
+      const isHeader = editRequest.field === 'Intestazione';
+      if (isHeader) panel.querySelector('details')?.setAttribute('open', '');
+      const [label, index = '0'] = (editRequest.field || '').split('|');
+      const fields = Array.from(panel.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(isHeader ? '.header-fields input' : '.content-fields input, .content-fields textarea, .content-fields select'));
+      const field = fields.filter((input) => (input.getAttribute('aria-label') || input.closest('label')?.querySelector('span')?.textContent) === label)[Number(index)] ?? fields[0];
+      field?.focus({ preventScroll: true });
+      field?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedBlock?.id, editRequest.token, open, collapsed]);
   const name = blockCatalog.find((item) => item.type === selectedBlock?.type)?.label;
   return (
     <aside ref={panelRef} className={`side-panel properties-panel ${open ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''}`} aria-labelledby="properties-title">
@@ -42,14 +57,14 @@ export function PropertiesPanel({ selectedBlock, open, onClose, collapsed, onTog
       <div className="panel-heading">
         <span className="eyebrow">{selectedBlock ? 'Contenuto' : 'Personalizzazione'}</span>
         <h2 id="properties-title">{selectedBlock ? name : 'Personalizza il CV'}</h2>
-        <p>{selectedBlock ? `Modifica qui ${name === 'Informazioni personali' ? 'i tuoi dati' : 'il contenuto'}${selectedBlock.type === 'text' || selectedBlock.type === 'heading' ? ', oppure scrivi direttamente nel foglio.' : '.'}` : 'Scegli un aspetto diverso. Le modifiche si salvano automaticamente.'}</p>
+        <p>{selectedBlock ? `Modifica qui ${name === 'Informazioni personali' ? 'i tuoi dati' : 'il contenuto'}.` : 'Scegli un aspetto diverso. Le modifiche si salvano automaticamente.'}</p>
         <button type="button" className="properties-close" onClick={onClose} aria-label="Chiudi pannello proprietà">×</button>
         <button type="button" className="panel-collapse-button" onClick={onToggle} aria-label="Comprimi pannello proprietà" aria-expanded={true} title="Comprimi pannello proprietà"><ChevronRight size={17} /></button>
       </div>
       <div className="panel-body">
       {selectedBlock ? <>
         {selectedBlock.type === 'personal' && <section className="property-section"><h3>Icone dei contatti</h3><label className="check-field"><input type="checkbox" checked={selectedBlock.style.showContactIcons !== false} onChange={(event) => onStyleChange({ showContactIcons: event.target.checked })} /><span>Mostra le icone</span></label></section>}
-        <section className="property-section"><h3>Contenuto</h3><BlockFields block={selectedBlock} onChange={onDataChange} /></section>
+        <section className="property-section content-fields"><h3>Contenuto</h3><BlockFields block={selectedBlock} onChange={onDataChange} /></section>
         <details className="property-disclosure"><summary>Personalizza aspetto</summary><div className="property-disclosure-body">
           <HeaderProperties block={selectedBlock} onStyleChange={onStyleChange} />
           <section className="property-section"><h3>Testo e spaziatura</h3>
@@ -88,7 +103,7 @@ export function PropertiesPanel({ selectedBlock, open, onClose, collapsed, onTog
           <Color label="Accento" value={globalStyle.accentColor} onChange={(accentColor) => onGlobalStyleChange({ accentColor })} />
         </section>
         <section className="property-section"><h3>Sfondo del CV</h3><Color label="Colore pagina" value={globalStyle.backgroundColor ?? '#ffffff'} onChange={(backgroundColor) => onGlobalStyleChange({ backgroundColor })} /><BackgroundImageFields image={globalStyle.backgroundImage} mode={globalStyle.backgroundMode} scope="page" onChange={onGlobalStyleChange} /><label className="form-field"><span>Opacità sfondo: {globalStyle.backgroundOpacity ?? 100}%</span><input type="range" min={0} max={100} value={globalStyle.backgroundOpacity ?? 100} onChange={(event) => onGlobalStyleChange({ backgroundOpacity: Number(event.target.value) })} /></label></section></div></details>
-        <p className="panel-footnote">Il CV si salva in questo browser. Scarica il progetto JSON per conservarne una copia.</p>
+        <p className="panel-footnote">Il CV si salva in questo browser. Scarica una copia modificabile per conservarla anche altrove.</p>
       </>}
       </div>
     </aside>
