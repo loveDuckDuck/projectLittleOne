@@ -12,6 +12,7 @@ import { createRandomDocument, type RandomCVOptions } from './models/randomDocum
 import type { BlockStyle, CVBlock, CVBlockType, GlobalCVStyle } from './models/cv';
 import { useCVDocument } from './hooks/useCVDocument';
 import { usePanelLayout } from './hooks/usePanelLayout';
+import { useTheme } from './hooks/useTheme';
 import { blocksOf, locateBlock, mapBlock, moveBlockTo, moveColumn, placeBlock, removeBlock, resizeColumns, setRowPreset, type DropTarget } from './utils/layout';
 import { downloadProject, parseDocument } from './utils/documentStorage';
 import { exportPdf } from './utils/exportPdf';
@@ -24,6 +25,7 @@ interface DragGeometry {
 }
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme();
   const { document, canUndo, canRedo, saveStatus, commit, replace, undo, redo } = useCVDocument();
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
@@ -36,6 +38,7 @@ export default function App() {
   const lastSaveStatus = useRef(saveStatus);
   const dragGeometry = useRef<DragGeometry | null>(null);
   const editorLayoutRef = useRef<HTMLDivElement>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor, { coordinateGetter: defaultKeyboardCoordinateGetter }));
   const allBlocks = blocksOf(document);
   const selectedBlock = allBlocks.find((block) => block.id === selectedBlockId) ?? null;
@@ -62,7 +65,7 @@ export default function App() {
         return;
       }
       if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
-      if (event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'a') {
+      if (allBlocks.length > 0 && event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'a') {
         event.preventDefault();
         setPreview((current) => !current);
         setSelectedBlockId(null);
@@ -74,7 +77,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [undo, redo, preview]);
+  }, [undo, redo, preview, allBlocks.length]);
 
   function addBlock(type: CVBlockType, target?: DropTarget | null) {
     const block = createBlock(type);
@@ -83,7 +86,7 @@ export default function App() {
     commit(placeBlock(document, block, destination));
     setSelectedBlockId(block.id);
     setPropertiesOpen(true);
-    notify('Blocco aggiunto');
+    notify('Sezione aggiunta');
   }
   function moveBlock(id: string, direction: -1 | 1) {
     const found = locateBlock(document, id);
@@ -107,7 +110,7 @@ export default function App() {
     if (!locateBlock(document, id)) return;
     commit(removeBlock(document, id));
     if (selectedBlockId === id) setSelectedBlockId(null);
-    notify('Blocco eliminato · Annulla per ripristinarlo');
+    notify('Sezione eliminata · Annulla per ripristinarla');
   }
   function duplicateRow(id: string) {
     const index = document.rows.findIndex((row) => row.id === id);
@@ -250,6 +253,7 @@ export default function App() {
     try { const parsed: unknown = JSON.parse(await file.text()); replace(parseDocument(parsed)); setSelectedBlockId(null); setPreview(false); notify('Progetto importato'); }
     catch (error) { notify(error instanceof Error ? error.message : 'File JSON non valido.', true); }
   }
+  function openProject() { importFileRef.current?.click(); }
   async function downloadPdf() {
     setExporting(true);
     try { await exportPdf(); notify('PDF esportato'); }
@@ -257,12 +261,13 @@ export default function App() {
     finally { setExporting(false); }
   }
   return <div className={`app-shell ${preview ? 'preview-mode' : ''}`}>
-    <Toolbar onRandomCV={generateRandomCV} blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto esportato'); }} onImportProject={importProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify('Nuovo CV creato'); }} />
+    <Toolbar theme={theme} onThemeChange={toggleTheme} onRandomCV={generateRandomCV} blockCount={allBlocks.length} saveStatus={saveStatus} preview={preview} canUndo={canUndo} canRedo={canRedo} exporting={exporting} onPreviewChange={(value) => { setPreview(value); setSelectedBlockId(null); }} onUndo={undo} onRedo={redo} onExportProject={() => { downloadProject(document); notify('Progetto scaricato'); }} onImportClick={openProject} onExportPdf={downloadPdf} onNewCV={(empty) => { replace(createStarterDocument(empty)); setSelectedBlockId(null); setPreview(false); notify(empty ? 'CV vuoto creato' : 'Esempio pronto da personalizzare'); }} />
+    <input ref={importFileRef} className="visually-hidden" type="file" accept=".json,application/json" aria-label="Apri progetto JSON" tabIndex={-1} onChange={(event) => { const file = event.target.files?.[0]; if (file) void importProject(file); event.target.value = ''; }} />
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragMove={onDragMove} onDragEnd={onDragEnd} onDragCancel={() => { dragGeometry.current = null; setDragId(null); setDropTarget(null); }}>
       <div ref={editorLayoutRef} className="editor-layout" style={{ '--blocks-panel-width': `${panelLayout.blocksCollapsed ? 48 : panelLayout.blocksWidth}px`, '--properties-panel-width': `${panelLayout.propertiesCollapsed ? 48 : panelLayout.propertiesWidth}px` } as CSSProperties}>
         {!preview && <BlocksSidebar onAdd={addBlock} collapsed={panelLayout.blocksCollapsed} onToggle={() => togglePanel('blocks')} />}
         {!preview && <PanelResizeHandle side="blocks" width={panelLayout.blocksWidth} disabled={panelLayout.blocksCollapsed} layoutRef={editorLayoutRef} onResize={(width) => setPanelWidth('blocks', width)} />}
-        <CVCanvas document={document} selectedBlockId={selectedBlockId} dragId={dragId} dropTarget={dropTarget} preview={preview} onSelectBlock={(id) => { setSelectedBlockId(id); if (id && !['text', 'heading'].includes(allBlocks.find((block) => block.id === id)?.type ?? '')) setPropertiesOpen(true); }} onEditText={updateInlineText} onOpenProperties={() => { setPropertiesOpen(true); if (panelLayout.propertiesCollapsed) togglePanel('properties'); }} onMoveBlock={moveBlock} onDuplicateBlock={duplicateBlock} onDeleteBlock={deleteBlock} onPreset={(id, widths) => commit(setRowPreset(document, id, widths))} onDuplicateRow={duplicateRow} onDeleteRow={deleteRow} onResize={(id, index, width) => commit(resizeColumns(document, id, index, width))} onMoveColumn={(rowId, columnId, direction) => { const row = document.rows.find((item) => item.id === rowId); const index = row?.columns.findIndex((column) => column.id === columnId) ?? -1; const neighbor = row?.columns[index + direction]; if (neighbor) commit(moveColumn(document, rowId, columnId, neighbor.id)); }} onPlaceSelectedBlock={(rowId, columnId) => { if (selectedBlock) commit(moveBlockTo(document, selectedBlock, { kind: 'column', rowId, columnId, index: 0 })); }} />
+        <CVCanvas document={document} selectedBlockId={selectedBlockId} dragId={dragId} dropTarget={dropTarget} preview={preview} onSelectBlock={(id) => { setSelectedBlockId(id); if (id && !['text', 'heading'].includes(allBlocks.find((block) => block.id === id)?.type ?? '')) setPropertiesOpen(true); }} onEditText={updateInlineText} onOpenProperties={() => { setPropertiesOpen(true); if (panelLayout.propertiesCollapsed) togglePanel('properties'); }} onStartExample={() => { replace(createStarterDocument(false)); setSelectedBlockId(null); setPreview(false); notify('Esempio pronto da personalizzare'); }} onStartEmpty={() => { replace(createStarterDocument(true)); setSelectedBlockId(null); setPreview(false); notify('CV vuoto creato'); }} onImportProject={openProject} onAddBlock={addBlock} onMoveBlock={moveBlock} onDuplicateBlock={duplicateBlock} onDeleteBlock={deleteBlock} onPreset={(id, widths) => commit(setRowPreset(document, id, widths))} onDuplicateRow={duplicateRow} onDeleteRow={deleteRow} onResize={(id, index, width) => commit(resizeColumns(document, id, index, width))} onMoveColumn={(rowId, columnId, direction) => { const row = document.rows.find((item) => item.id === rowId); const index = row?.columns.findIndex((column) => column.id === columnId) ?? -1; const neighbor = row?.columns[index + direction]; if (neighbor) commit(moveColumn(document, rowId, columnId, neighbor.id)); }} onPlaceSelectedBlock={(rowId, columnId) => { if (selectedBlock) commit(moveBlockTo(document, selectedBlock, { kind: 'column', rowId, columnId, index: 0 })); }} />
         {!preview && <PanelResizeHandle side="properties" width={panelLayout.propertiesWidth} disabled={panelLayout.propertiesCollapsed} layoutRef={editorLayoutRef} onResize={(width) => setPanelWidth('properties', width)} />}
         {!preview && <PropertiesPanel selectedBlock={selectedBlock} globalStyle={document.globalStyle} open={propertiesOpen} onClose={() => setPropertiesOpen(false)} collapsed={panelLayout.propertiesCollapsed} onToggle={() => togglePanel('properties')} onDataChange={updateSelectedData} onStyleChange={updateSelectedStyle} onGlobalStyleChange={updateGlobalStyle} onLoadFontForBlock={loadFontForSelectedBlock} onRemoveFont={removeCustomFont} onDuplicate={() => { if (selectedBlockId) duplicateBlock(selectedBlockId); }} onDelete={() => { if (selectedBlockId) deleteBlock(selectedBlockId); }} />}
       </div>

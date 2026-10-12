@@ -19,6 +19,7 @@ La build viene creata in `dist/`. Su macOS o Linux, per GitHub Pages puoi usare 
 
 ## Uso
 
+- Lo switch **sole/luna**, accanto al logo nella barra superiore, cambia colori, testi e icone dell'interfaccia con una transizione fluida. La prima apertura segue il tema del sistema; la scelta resta nel browser. Il foglio e il PDF conservano i colori del CV. Con la preferenza di sistema per movimento ridotto, la transizione è disattivata.
 - Usa `+` nella libreria per aggiungere un blocco oppure trascinalo nel foglio.
 - Clicca un blocco nel CV per aprire i campi di modifica. Su tablet e telefono il pannello Proprietà si apre a destra; il pulsante «Modifica blocco» lo riapre quando serve.
 - Su desktop la libreria, il CV e le proprietà scorrono separatamente. La finestra resta ferma mentre scorri il contenuto sotto il mouse.

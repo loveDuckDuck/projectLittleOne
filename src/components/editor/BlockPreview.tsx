@@ -92,7 +92,7 @@ function content(block: CVBlock, editable = false, onEditText?: (value: string) 
     case 'spacer':
       return <div style={{ height: block.data.height }} aria-hidden="true" />;
     case 'image':
-      return block.data.src ? <img className="cv-image" src={block.data.src} alt={block.data.alt} style={{ width: `${block.data.width}%`, height: block.data.height || 'auto', objectFit: block.data.fit }} /> : <div className="cv-image-placeholder">Seleziona il blocco e carica un’immagine</div>;
+      return block.data.src ? <img className="cv-image" src={block.data.src} alt={block.data.alt} style={{ width: `${block.data.width}%`, height: block.data.height || 'auto', objectFit: block.data.fit }} /> : <div className="cv-image-placeholder">Seleziona questa sezione per caricare un’immagine</div>;
     case 'custom':
       return <section className="cv-entry">{!block.style.header && <h3>{block.data.title}</h3>}{block.data.body && <p>{block.data.body}</p>}{block.data.bullets.filter(Boolean).length > 0 && <ul>{block.data.bullets.filter(Boolean).map((item, index) => <li key={index}>{item}</li>)}</ul>}</section>;
   }

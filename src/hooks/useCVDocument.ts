@@ -32,7 +32,7 @@ function reducer(state: HistoryState, action: Action): HistoryState {
 
 export function useCVDocument() {
   const [history, dispatch] = useReducer(reducer, undefined, (): HistoryState => ({ past: [], present: loadSavedDocument(), future: [] }));
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saving');
 
   useEffect(() => {
     setSaveStatus('saving');

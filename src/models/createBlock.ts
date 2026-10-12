@@ -25,7 +25,7 @@ export function createBlock(type: CVBlockType): CVBlock {
 }
 
 export function createStarterDocument(empty = false): CVDocument {
-  if (empty) return { version: 2, globalStyle: { ...initialDocument.globalStyle }, rows: [] };
+  if (empty) return { version: 2, globalStyle: { ...initialDocument.globalStyle }, rows: [singleRow()] };
   const source = structuredClone(initialDocument.blocks);
   const blocks: CVBlock[] = [];
   for (let index = 0; index < source.length; index += 1) {

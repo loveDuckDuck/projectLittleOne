@@ -17,15 +17,15 @@ export function SortableBlock({ block, index, count, selected, preview, onSelect
     if (event.target !== event.currentTarget) return;
     if (event.key === 'Enter') { event.preventDefault(); onSelect(); }
     else listeners?.onKeyDown?.(event);
-  }} {...(preview ? {} : attributes)} tabIndex={preview ? undefined : 0} role={preview ? undefined : 'button'} aria-label={preview ? undefined : `Blocco ${index + 1}: clicca per selezionare o trascina per spostare`}>
+  }} {...(preview ? {} : attributes)} tabIndex={preview ? undefined : 0} role={preview ? undefined : 'button'} aria-label={preview ? undefined : `Sezione ${index + 1}: seleziona per modificare`}>
     {block.style.backgroundImage && <span className="block-background-image" aria-hidden="true" style={{ ...backgroundImageStyle(block.style.backgroundImage, block.style.backgroundMode), opacity: (block.style.backgroundOpacity ?? 100) / 100 }} />}
     <BlockPreview block={block} backgroundOnParent editable={!preview && (block.type === 'text' || block.type === 'heading')} onEditText={onEditText} />
     {!preview && <div className="block-controls" onClick={(event) => event.stopPropagation()}>
-      <button ref={setActivatorNodeRef} type="button" className="block-drag-button" title="Trascina blocco" aria-label={`Trascina blocco ${index + 1}`} {...attributes} {...listeners}><Hand size={15} /></button>
-      <button type="button" title="Sposta sopra" aria-label="Sposta blocco sopra" disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={15} /></button>
-      <button type="button" title="Sposta sotto" aria-label="Sposta blocco sotto" disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown size={15} /></button>
-      <button type="button" title="Duplica" aria-label="Duplica blocco" onClick={onDuplicate}><Copy size={15} /></button>
-      <button type="button" title="Elimina" aria-label="Elimina blocco" onClick={onDelete}><Trash2 size={15} /></button>
+      <button ref={setActivatorNodeRef} type="button" className="block-drag-button" title="Trascina per spostare" aria-label={`Sposta sezione ${index + 1}`} {...attributes} {...listeners}><Hand size={15} /></button>
+      <button type="button" title="Sposta sopra" aria-label="Sposta sezione sopra" disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp size={15} /></button>
+      <button type="button" title="Sposta sotto" aria-label="Sposta sezione sotto" disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown size={15} /></button>
+      <button type="button" title="Duplica" aria-label="Duplica sezione" onClick={onDuplicate}><Copy size={15} /></button>
+      <button type="button" title="Elimina" aria-label="Elimina sezione" onClick={onDelete}><Trash2 size={15} /></button>
     </div>}
   </div>;
 }

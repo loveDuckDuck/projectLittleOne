@@ -58,7 +58,11 @@ export function removeBlock(document: CVDocument, id: string): CVDocument {
 }
 
 export function placeBlock(document: CVDocument, block: CVBlock, target: DropTarget | null): CVDocument {
-  if (!target) return { ...document, rows: [...document.rows, singleRow([block])] };
+  if (!target) {
+    const emptyColumn = document.rows.flatMap((row) => row.columns.map((column) => ({ row, column }))).find(({ column }) => column.blocks.length === 0);
+    if (!emptyColumn) return { ...document, rows: [...document.rows, singleRow([block])] };
+    target = { kind: 'column', rowId: emptyColumn.row.id, columnId: emptyColumn.column.id, index: 0 };
+  }
   const rowIndex = document.rows.findIndex((row) => row.id === target.rowId);
   if (rowIndex < 0) return document;
   const rows = document.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, blocks: [...column.blocks] })) }));

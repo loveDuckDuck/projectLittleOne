@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { ArrowLeft, ArrowRight, Copy, GripVertical, Trash2 } from 'lucide-react';
-import type { CVDocument, CVRow } from '../../models/cv';
+import type { CVBlockType, CVDocument, CVRow } from '../../models/cv';
 import { presets, sideColumnLayout, type DropTarget } from '../../utils/layout';
 import { blockCatalog } from '../../models/blockCatalog';
 import { paginate, type PageSlice } from '../../utils/pagination';
@@ -14,6 +14,8 @@ export interface CVCanvasProps {
   document: CVDocument; selectedBlockId: string | null; dragId: string | null; dropTarget: DropTarget | null; preview: boolean;
   onSelectBlock: (id: string | null) => void; onMoveBlock: (id: string, direction: -1 | 1) => void;
   onEditText: (id: string, value: string) => void; onOpenProperties: () => void;
+  onStartExample: () => void; onStartEmpty: () => void; onImportProject: () => void;
+  onAddBlock: (type: CVBlockType) => void;
   onDuplicateBlock: (id: string) => void; onDeleteBlock: (id: string) => void;
   onPreset: (rowId: string, widths: readonly number[]) => void; onDuplicateRow: (rowId: string) => void;
   onDeleteRow: (rowId: string) => void; onResize: (rowId: string, leftIndex: number, width: number) => void;
@@ -25,14 +27,19 @@ function Column({ row, columnIndex, props, beginResize }: { row: CVRow; columnIn
   const column = row.columns[columnIndex];
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: `column:${row.id}:${column.id}`, disabled: props.preview });
   const { preview, dropTarget } = props;
+  const isBlankStarter = props.document.rows.length === 1 && row.columns.length === 1 && column.blocks.length === 0;
   return <div ref={setNodeRef} data-column-id={column.id} className={`cv-column ${isDragging ? 'is-dragging' : ''} ${dropTarget?.kind === 'column' && dropTarget.columnId === column.id ? 'is-drop-column' : ''}`}>
-    {!preview && row.columns.length > 1 && <div className="column-tools" onClick={(event) => event.stopPropagation()}><button ref={setActivatorNodeRef} type="button" className="column-handle" title="Trascina per riordinare la colonna" aria-label={`Trascina colonna ${columnIndex + 1} nella riga`} {...attributes} {...listeners}><GripVertical size={14} aria-hidden="true" /><span>Colonna {columnIndex + 1}</span></button><button type="button" disabled={columnIndex === 0} title="Sposta colonna a sinistra" aria-label={`Sposta colonna ${columnIndex + 1} a sinistra`} onClick={() => props.onMoveColumn(row.id, column.id, -1)}><ArrowLeft size={14} /></button><button type="button" disabled={columnIndex === row.columns.length - 1} title="Sposta colonna a destra" aria-label={`Sposta colonna ${columnIndex + 1} a destra`} onClick={() => props.onMoveColumn(row.id, column.id, 1)}><ArrowRight size={14} /></button></div>}
+    {!preview && row.columns.length > 1 && <div className="column-tools" onClick={(event) => event.stopPropagation()}><button ref={setActivatorNodeRef} type="button" className="column-handle" title="Riordina con trascinamento o tastiera" aria-label={`Riordina colonna ${columnIndex + 1}; usa Spazio e le frecce`} {...attributes} {...listeners}><GripVertical size={14} aria-hidden="true" /><span>Colonna {columnIndex + 1}</span></button><button type="button" disabled={columnIndex === 0} title="Sposta colonna a sinistra" aria-label={`Sposta colonna ${columnIndex + 1} a sinistra`} onClick={() => props.onMoveColumn(row.id, column.id, -1)}><ArrowLeft size={14} /></button><button type="button" disabled={columnIndex === row.columns.length - 1} title="Sposta colonna a destra" aria-label={`Sposta colonna ${columnIndex + 1} a destra`} onClick={() => props.onMoveColumn(row.id, column.id, 1)}><ArrowRight size={14} /></button></div>}
     {column.blocks.map((block, index) => <div key={block.id} className="block-slot">
       {dropTarget?.kind === 'column' && dropTarget.columnId === column.id && dropTarget.index === index && !preview && !props.dragId?.startsWith('column:') && <div className="column-drop-line">Rilascia qui</div>}
       <SortableBlock block={block} index={index} count={column.blocks.length} selected={block.id === props.selectedBlockId} preview={preview} onSelect={() => props.onSelectBlock(block.id)} onEditText={(value) => props.onEditText(block.id, value)} onMove={(direction) => props.onMoveBlock(block.id, direction)} onDuplicate={() => props.onDuplicateBlock(block.id)} onDelete={() => props.onDeleteBlock(block.id)} />
     </div>)}
     {dropTarget?.kind === 'column' && dropTarget.columnId === column.id && dropTarget.index === column.blocks.length && !preview && !props.dragId?.startsWith('column:') && <div className="column-drop-line">Rilascia qui</div>}
-    {column.blocks.length === 0 && !preview && <button type="button" className="empty-column" disabled={!props.selectedBlockId} onClick={(event) => { event.stopPropagation(); props.onPlaceSelectedBlock(row.id, column.id); }}>{props.selectedBlockId ? 'Sposta il blocco selezionato qui' : 'Trascina qui un blocco'}</button>}
+    {column.blocks.length === 0 && !preview && (props.selectedBlockId
+      ? <button type="button" className="empty-column" onClick={(event) => { event.stopPropagation(); props.onPlaceSelectedBlock(row.id, column.id); }}>Sposta qui la sezione selezionata</button>
+      : isBlankStarter
+        ? <button type="button" className="empty-column" onClick={() => props.onAddBlock('personal')}>Aggiungi i tuoi dati personali</button>
+        : <div className="empty-column empty-column-hint">Scegli una sezione dal pannello a sinistra</div>)}
     {!preview && columnIndex < row.columns.length - 1 && <button type="button" className="column-divider" onPointerDown={(event) => beginResize(event, columnIndex)} title="Trascina per cambiare la larghezza delle colonne" aria-label={`Ridimensiona colonne ${columnIndex + 1} e ${columnIndex + 2}`}><span className="column-divider-grip" aria-hidden="true" /></button>}
   </div>;
 }
@@ -86,7 +93,7 @@ function Row({ row, number, props }: { row: CVRow; number: number; props: CVCanv
   }
   return <div className={`cv-row ${isDragging ? 'is-dragging' : ''} ${sideLayout ? 'is-side-preview' : ''}`} data-row-id={row.id}>
     {!preview && <div className="row-controls" onClick={(event) => event.stopPropagation()}>
-      <button ref={setNodeRef} type="button" className="row-handle" title="Trascina riga" aria-label={`Trascina riga ${number}`} {...attributes} {...listeners}><GripVertical size={15} aria-hidden="true" /><span>Riga {number}</span></button>
+      <button ref={setNodeRef} type="button" className="row-handle" title="Riordina con trascinamento o tastiera" aria-label={`Riordina riga ${number}; usa Spazio e le frecce`} {...attributes} {...listeners}><GripVertical size={15} aria-hidden="true" /><span>Riga {number}</span></button>
       <label>Layout <select aria-label={`Layout riga ${number}`} value={presets.findIndex((widths) => widths.length === row.columns.length && widths.every((width, index) => width === row.columns[index].width))} onChange={(event) => props.onPreset(row.id, presets[Number(event.target.value)] ?? presets[0])}>
         <option value={-1} disabled>Personalizzato</option>{presets.map((widths, index) => <option key={index} value={index}>{widths.length === 3 ? '33 / 33 / 33' : widths.join(' / ')}</option>)}
       </select></label>
@@ -102,6 +109,7 @@ function Row({ row, number, props }: { row: CVRow; number: number; props: CVCanv
 
 export function CVCanvas(props: CVCanvasProps) {
   const { document, preview, onSelectBlock } = props;
+  const isEmpty = document.rows.length === 0 && !preview;
   const { globalStyle } = document;
   const pageRef = useRef<HTMLDivElement | null>(null);
   const [slices, setSlices] = useState<PageSlice[]>([{ start: 0, end: 0 }]);
@@ -123,15 +131,26 @@ export function CVCanvas(props: CVCanvasProps) {
     return () => observer.disconnect();
   }, [document.rows, globalStyle.pageMargin]);
   const style = { fontFamily: globalStyle.fontFamily === CUSTOM_FONT_FAMILY ? '"CV Custom Font", Arial, sans-serif' : globalStyle.fontFamily, color: globalStyle.textColor, backgroundColor: pageBackground(globalStyle.backgroundColor, globalStyle.backgroundOpacity), fontSize: `${globalStyle.baseFontSize}pt`, padding: `${globalStyle.pageMargin}mm`, '--page-margin': `${globalStyle.pageMargin}mm`, '--cv-accent': globalStyle.accentColor, '--section-spacing': `${globalStyle.sectionSpacing}px` } as CSSProperties;
-  return <main className={`canvas-workspace ${preview ? 'is-preview' : ''} ${zoomed ? 'is-zoomed' : ''}`} onClick={(event) => { if (!preview && (event.target as HTMLElement).classList.contains('cv-page')) onSelectBlock(null); }}>
+  return <main className={`canvas-workspace ${preview ? 'is-preview' : ''} ${zoomed ? 'is-zoomed' : ''} ${isEmpty ? 'is-empty' : ''}`} onClick={(event) => { if (!preview && (event.target as HTMLElement).classList.contains('cv-page')) onSelectBlock(null); }}>
     {globalStyle.customFont && <style>{`@font-face { font-family: "${CUSTOM_FONT_FAMILY}"; src: url("${globalStyle.customFont.dataUrl}"); font-display: block; }`}</style>}
-    <div className="canvas-topline"><div><span className="eyebrow">{preview ? 'Anteprima finale' : 'Editor documento'}</span><h2>Il tuo CV</h2></div><div className="canvas-top-actions"><span className="page-size-label">A4 · {slices.length} {slices.length === 1 ? 'pagina' : 'pagine'}</span><button type="button" className="page-zoom-button" aria-pressed={zoomed} onClick={() => setZoomed(!zoomed)}>{zoomed ? 'Adatta pagina' : 'Ingrandisci pagina'}</button>{!preview && <button type="button" className="edit-panel-button" onClick={props.onOpenProperties}>{props.selectedBlockId ? 'Modifica blocco' : 'Stile del CV'}</button>}</div></div>
-    <div className="canvas-scroll"><div id="cv-print-area" ref={(node) => { pageRef.current = node; setNodeRef(node); }} className="cv-page" style={style}>
-      {globalStyle.backgroundImage && <span className="page-background-image" aria-hidden="true" style={{ ...backgroundImageStyle(globalStyle.backgroundImage, globalStyle.backgroundMode, 'page'), opacity: (globalStyle.backgroundOpacity ?? 100) / 100 }} />}
-      {document.rows.map((row, index) => <Row key={row.id} row={row} number={index + 1} props={props} />)}
-      {document.rows.length === 0 && !preview && <div className="empty-canvas">Scegli un blocco dalla libreria o trascinalo qui.</div>}
-      {slices.slice(0, -1).map((slice, index) => <div className="page-break-indicator" style={{ top: `${slice.end}px` }} key={index}><span>Pagina {index + 2}</span></div>)}
-    </div></div>
-    {!preview && <p className="canvas-caption">Trascina un blocco vicino al bordo sinistro o destro di un altro per creare una colonna. Rilascialo al centro per inserirlo nella colonna, o fuori dal blocco per creare una riga. Scrivi nei blocchi Testo e Titolo; trascina il divisore per regolare la larghezza delle colonne.</p>}
+    <div className="canvas-topline"><div><h2>Il tuo CV</h2></div><div className="canvas-top-actions">{!isEmpty && <><span className="page-size-label">A4 · {slices.length} {slices.length === 1 ? 'pagina' : 'pagine'}</span><button type="button" className="page-zoom-button" aria-pressed={zoomed} onClick={() => setZoomed(!zoomed)}>{zoomed ? 'Adatta pagina' : 'Ingrandisci pagina'}</button></>}{!preview && <button type="button" className="edit-panel-button" onClick={props.onOpenProperties}>{props.selectedBlockId ? 'Modifica sezione' : 'Personalizza aspetto'}</button>}</div></div>
+    {isEmpty ? <section className="empty-start" aria-labelledby="empty-start-title">
+      <h3 id="empty-start-title">Crea il tuo CV</h3>
+      <p>Parti da un esempio già compilato e sostituisci i testi dimostrativi con i tuoi dati.</p>
+      <div className="empty-start-actions">
+        <button type="button" className="button-primary" onClick={props.onStartExample}>Parti da un esempio</button>
+        <button type="button" onClick={props.onStartEmpty}>Crea un CV vuoto</button>
+        <button type="button" className="empty-start-import" onClick={props.onImportProject}>Apri un progetto (JSON)</button>
+      </div>
+      <ol className="empty-start-steps"><li>Inserisci i tuoi dati personali</li><li>Aggiungi esperienze e formazione</li><li>Controlla l’anteprima e scarica il PDF</li></ol>
+      <p className="empty-start-note">Il CV si salva in questo browser. Scarica il progetto JSON per conservarne una copia.</p>
+    </section> : <>
+      <div className="canvas-scroll"><div id="cv-print-area" ref={(node) => { pageRef.current = node; setNodeRef(node); }} className="cv-page" style={style}>
+        {globalStyle.backgroundImage && <span className="page-background-image" aria-hidden="true" style={{ ...backgroundImageStyle(globalStyle.backgroundImage, globalStyle.backgroundMode, 'page'), opacity: (globalStyle.backgroundOpacity ?? 100) / 100 }} />}
+        {document.rows.map((row, index) => <Row key={row.id} row={row} number={index + 1} props={props} />)}
+        {slices.slice(0, -1).map((slice, index) => <div className="page-break-indicator" style={{ top: `${slice.end}px` }} key={index}><span>Pagina {index + 2}</span></div>)}
+      </div></div>
+      {!preview && <details className="canvas-help"><summary>Aiuto per organizzare le sezioni</summary><p>Usa le frecce per spostare una sezione. Per creare colonne, trascina un’altra sezione accanto a una esistente. Testo e titoli si modificano direttamente nel foglio.</p></details>}
+    </>}
   </main>;
 }
