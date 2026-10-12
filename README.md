@@ -11,6 +11,15 @@ npm run dev
 
 Apri l'indirizzo mostrato da Vite, normalmente `http://localhost:5173/`. Puoi usare anche `pnpm` se lo hai installato.
 
+Se PowerShell mostra `pnpm: The term 'pnpm' is not recognized`, verifica prima `node --version` e `npm --version`. Se entrambi rispondono, avvia il progetto con:
+
+```powershell
+npm install
+npm run dev
+```
+
+Se anche `node` o `npm` non vengono riconosciuti, installa Node.js con npm e riapri PowerShell prima di riprovare. Per vedere gli script disponibili usa `npm run` (oppure `pnpm run` dopo aver installato pnpm).
+
 ```bash
 npm run build
 ```
@@ -22,6 +31,7 @@ La build viene creata in `dist/`. Su macOS o Linux, per GitHub Pages puoi usare 
 - Lo switch **sole/luna**, accanto al logo nella barra superiore, cambia colori, testi e icone dell'interfaccia con una transizione fluida. La prima apertura segue il tema del sistema; la scelta resta nel browser. Il foglio e il PDF conservano i colori del CV. Con la preferenza di sistema per movimento ridotto, la transizione è disattivata.
 - Usa `+` nella libreria per aggiungere un blocco oppure trascinalo nel foglio.
 - Clicca un blocco nel CV per aprire i campi di modifica. Su tablet e telefono il pannello Proprietà si apre a destra; il pulsante «Modifica blocco» lo riapre quando serve.
+- Nel blocco **Informazioni personali**, i contatti mostrano icone per email, telefono, località e profili. In Proprietà → Contatti scegli la riga o da una a tre colonne e, se preferisci, nascondi le icone. Le colonne si riducono quando il blocco è stretto.
 - Su desktop la libreria, il CV e le proprietà scorrono separatamente. La finestra resta ferma mentre scorri il contenuto sotto il mouse.
 - Su desktop puoi comprimere i pannelli laterali o trascinare i separatori per cambiarne la larghezza. La libreria usa due colonne quando è larga; le proprietà affiancano le sezioni quando c'è spazio. Le preferenze restano nel browser.
 - Nei blocchi **Testo** e **Titolo** puoi scrivere direttamente nel foglio. Per gli altri blocchi usa i campi «Contenuto» nel pannello Proprietà.

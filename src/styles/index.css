@@ -61,6 +61,7 @@ button { font: inherit; }
 .cv-block:focus-visible { outline: 2px solid #5a8fc9; outline-offset: 4px; }
 .cv-block p, .cv-block h1, .cv-block h2, .cv-block h3 { margin-top: 0; }
 .cv-personal h1 { margin: 0; font-size: 28pt; line-height: 1.08; letter-spacing: -.055em; font-weight: 700; }
+.cv-personal { container: personal / inline-size; }
 .cv-role { margin: 6px 0 13px; color: var(--block-accent, var(--cv-accent)); font-size: 13pt; font-weight: 600; }
 .cv-contacts { display: flex; flex-wrap: wrap; gap: 7px 17px; margin-bottom: 14px; color: #64738a; font-size: 8.5pt; line-height: 1.45; }
 .cv-contacts-inline { column-gap: 8px; }

@@ -121,7 +121,15 @@ export default function App() {
     const rows = [...document.rows]; rows.splice(index + 1, 0, copy); commit({ ...document, rows });
   }
   function deleteRow(id: string) { commit({ ...document, rows: document.rows.filter((row) => row.id !== id) }); setSelectedBlockId(null); }
-  function updateSelectedData(data: CVBlock['data']) { if (selectedBlockId) commit(mapBlock(document, selectedBlockId, (block) => ({ ...block, data } as CVBlock))); }
+  function updateSelectedData(data: CVBlock['data']) {
+    if (!selectedBlockId) return;
+    commit(mapBlock(document, selectedBlockId, (block) => {
+      if (block.type === 'personal' && 'contactsLayout' in data && (block.data.contactsLayout !== data.contactsLayout || block.data.contactsColumns !== data.contactsColumns)) {
+        return { ...block, data, style: { ...block.style, contactLayout: undefined } } as CVBlock;
+      }
+      return { ...block, data } as CVBlock;
+    }));
+  }
   function updateInlineText(id: string, value: string) {
     const current = allBlocks.find((block) => block.id === id);
     if (!current || (current.type !== 'text' && current.type !== 'heading') || current.data.text === value) return;

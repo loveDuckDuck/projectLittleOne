@@ -28,6 +28,8 @@ export interface BlockStyle {
   marginBottom?: number;
   textColor?: string;
   accentColor?: string;
+  contactLayout?: 'inline' | '1' | '2' | '3';
+  showContactIcons?: boolean;
   fontFamily?: string;
   backgroundColor?: string;
   backgroundOpacity?: number;

@@ -48,6 +48,7 @@ export function PropertiesPanel({ selectedBlock, open, onClose, collapsed, onTog
       </div>
       <div className="panel-body">
       {selectedBlock ? <>
+        {selectedBlock.type === 'personal' && <section className="property-section"><h3>Icone dei contatti</h3><label className="check-field"><input type="checkbox" checked={selectedBlock.style.showContactIcons !== false} onChange={(event) => onStyleChange({ showContactIcons: event.target.checked })} /><span>Mostra le icone</span></label></section>}
         <section className="property-section"><h3>Contenuto</h3><BlockFields block={selectedBlock} onChange={onDataChange} /></section>
         <details className="property-disclosure"><summary>Personalizza aspetto</summary><div className="property-disclosure-body">
           <HeaderProperties block={selectedBlock} onStyleChange={onStyleChange} />
