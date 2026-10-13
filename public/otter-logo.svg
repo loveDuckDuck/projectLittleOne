@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Otter Builder</title>
+  <circle cx="32" cy="32" r="32" fill="#075e54" />
+  <g fill="#fff9ed">
+    <path d="M23 35c-4 5-6 11-3 17-7 0-12-5-14-11 0 12 11 20 24 19 14-1 22-11 17-22l-4-6Z" />
+    <path d="M17 22c-3-1-3-6 0-8 3-2 6 0 7 2 5-2 11-2 16 0 1-2 4-4 7-2 3 2 3 7 0 8 1 2 2 4 2 7 0 9-8 15-17 15S15 38 15 29c0-3 1-5 2-7Z" />
+  </g>
+  <g fill="none" stroke="#075e54" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 25q3 3 6 0m8 0q3 3 6 0" />
+    <path d="M32 32v3m-5 0q5 5 10 0" />
+    <path d="m23 31-6-1m6 5-6 1m24-5 6-1m-6 5 6 1" />
+    <path d="M24 47q4-4 8 1 4-5 8-1" />
+  </g>
+  <path d="M28 29q4-2 8 0l-4 4Z" fill="#075e54" />
+</svg>

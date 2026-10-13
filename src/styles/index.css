@@ -14,7 +14,7 @@ button { font: inherit; }
 .app-shell { min-height: 100vh; }
 .toolbar { height: 72px; display: flex; align-items: center; gap: 30px; padding: 0 24px; background: #fff; border-bottom: 1px solid #e5e9ef; }
 .toolbar-brand { display: flex; align-items: center; gap: 11px; min-width: 232px; }
-.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #315d91; color: #fff; font-size: 13px; font-weight: 800; letter-spacing: -.04em; }
+.brand-mark { display: block; flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; object-fit: contain; }
 .toolbar-brand div { display: flex; flex-direction: column; gap: 2px; }
 .toolbar-brand strong { font-size: 15px; letter-spacing: -.02em; }
 .toolbar-brand div span { color: #8792a4; font-size: 11px; }
@@ -793,7 +793,6 @@ body { background: var(--ui-ground); color: var(--ui-text); }
   border-color: var(--ui-accent-strong);
   color: var(--ui-on-accent);
 }
-.brand-mark { background: var(--ui-accent); color: var(--ui-on-accent); }
 .new-cv-dialog p, .error-screen p, .skill-rating-field, .profile-photo-fields h4, .palette-grip,
 .toolbar-actions .shortcut-hint { color: var(--ui-muted); }
 .profile-photo-fields { border-color: var(--ui-border-soft); }

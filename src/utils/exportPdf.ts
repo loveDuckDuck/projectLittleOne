@@ -44,7 +44,7 @@ export async function renderPdf(name = 'Il mio CV') {
     },
   });
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
-  pdf.setProperties({ title: name, creator: 'CV Builder' });
+  pdf.setProperties({ title: name, creator: 'Otter Builder' });
   pdf.addFileToVFS('NotoSans.ttf', font); pdf.addFont('NotoSans.ttf', 'NotoSans', 'normal'); pdf.setFont('NotoSans');
   const mm = 210 / area.offsetWidth;
   const rasterScale = canvas.width / area.offsetWidth;

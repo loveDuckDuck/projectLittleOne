@@ -1,4 +1,4 @@
-# CV Builder · Beta 0.1.0
+# Otter Builder · Beta 0.1.0
 
 Editor visuale per curriculum, costruito con React, TypeScript e Vite. Funziona nel browser senza backend e genera una build statica per GitHub Pages.
 
@@ -26,7 +26,7 @@ npm run build
 
 La build viene creata in `dist/`. Su macOS o Linux, per GitHub Pages puoi usare `VITE_BASE_PATH=/CVDevelopment/ npm run build`; su PowerShell usa `$env:VITE_BASE_PATH='/CVDevelopment/'; npm run build`.
 
-Il percorso predefinito è `/projectLittleOne/`. Per pubblicare alla radice di un dominio usa `VITE_BASE_PATH=/`. La favicon con una lontra stilizzata che galleggia sulla schiena si trova in `public/favicon.svg`; Vite ne adatta il collegamento al percorso della build.
+Il percorso predefinito è `/projectLittleOne/`. Per pubblicare alla radice di un dominio usa `VITE_BASE_PATH=/`. Il logo con una lontra minimale in un cerchio verde si trova in `public/otter-logo.svg` ed è usato sia nella barra superiore sia come favicon; Vite ne adatta il collegamento al percorso della build.
 
 ## Uso
 

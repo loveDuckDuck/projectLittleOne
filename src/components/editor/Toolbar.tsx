@@ -54,7 +54,7 @@ export function Toolbar({ theme, onThemeChange, blockCount, saveStatus, preview,
   }
   return <>
     <header className="toolbar">
-      <div className="toolbar-brand"><span className="brand-mark" aria-hidden="true">CV</span><div><strong>CV Builder</strong></div>
+      <div className="toolbar-brand"><img className="brand-mark" src={`${import.meta.env.BASE_URL}otter-logo.svg`} width={36} height={36} alt="" /><div><strong>Otter Builder</strong></div>
         <button type="button" className="theme-toggle" role="switch" aria-checked={theme === 'dark'} aria-label="Modalità scura" title={theme === 'dark' ? 'Passa alla modalità chiara' : 'Passa alla modalità scura'} onClick={onThemeChange}>
           <span className="theme-toggle-track" aria-hidden="true"><Sun className="theme-toggle-sun" size={16} /><Moon className="theme-toggle-moon" size={16} /><span className="theme-toggle-thumb" /></span>
         </button>

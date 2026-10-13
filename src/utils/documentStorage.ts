@@ -87,7 +87,7 @@ function validBlock(value: unknown): value is CVBlock {
 
 export function parseDocument(value: unknown): CVDocument {
   if (!isRecord(value) || ![1, 2].includes(value.version as number) || !isRecord(value.globalStyle)) {
-    throw new Error('Il file non contiene un progetto CV Builder valido.');
+    throw new Error('Il file non contiene un progetto Otter Builder valido.');
   }
   if ('name' in value && (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 120)) throw new Error('Il nome del progetto non è valido.');
   if (!matchesShape(value.globalStyle, createStarterDocument().globalStyle)) {
