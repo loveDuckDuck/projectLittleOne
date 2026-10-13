@@ -26,6 +26,8 @@ npm run build
 
 La build viene creata in `dist/`. Su macOS o Linux, per GitHub Pages puoi usare `VITE_BASE_PATH=/CVDevelopment/ npm run build`; su PowerShell usa `$env:VITE_BASE_PATH='/CVDevelopment/'; npm run build`.
 
+Il percorso predefinito è `/projectLittleOne/`. Per pubblicare alla radice di un dominio usa `VITE_BASE_PATH=/`. La favicon con una lontra stilizzata che galleggia sulla schiena si trova in `public/favicon.svg`; Vite ne adatta il collegamento al percorso della build.
+
 ## Uso
 
 - Lo switch **sole/luna**, accanto al logo nella barra superiore, cambia colori, testi e icone dell'interfaccia con una transizione fluida. La prima apertura segue il tema del sistema; la scelta resta nel browser. Il foglio e il PDF conservano i colori del CV. Con la preferenza di sistema per movimento ridotto, la transizione è disattivata.
@@ -36,6 +38,8 @@ La build viene creata in `dist/`. Su macOS o Linux, per GitHub Pages puoi usare 
 - Su desktop la libreria, il CV e le proprietà scorrono separatamente. La finestra resta ferma mentre scorri il contenuto sotto il mouse.
 - Su desktop puoi comprimere i pannelli laterali o trascinare i separatori per cambiarne la larghezza. La libreria usa due colonne quando è larga; le proprietà affiancano le sezioni quando c'è spazio. Le preferenze restano nel browser.
 - Tutti i blocchi, compresi **Testo** e **Titolo**, si modificano dai campi «Contenuto» nel pannello Proprietà.
+- **Altre azioni → Stile del CV** apre font, colori e sfondo dell'intero documento anche quando è selezionata una sezione. **Personalizza aspetto** nelle proprietà della sezione modifica invece quella sezione.
+- Sotto il foglio, **Guida rapida: modifica, layout e salvataggio** spiega i comandi principali e la differenza tra PDF e copia modificabile. Il menu **Altre azioni** si chiude con `Esc` o cliccando fuori.
 - Sul telefono il foglio si adatta alla larghezza dello schermo. Premi «Ingrandisci pagina» per leggere e modificare con lo scorrimento orizzontale, poi «Adatta pagina» per vedere l'intero CV.
 - Passa il mouse sopra un blocco: compare il cursore a mano e puoi trascinarlo direttamente. Cliccalo per mostrare i comandi sotto il contenuto. Rilascia sopra o sotto una riga, in una colonna o ai lati di un blocco per creare una colonna.
 - Il menu Layout sulla riga mostra miniature di una, due o tre colonne. Il comando **Sposta sezione in** sposta una sezione in un’altra colonna o in una nuova riga senza trascinarla. Trascina il comando «Riga» o «Colonna» per riordinarle, oppure usa le frecce. Passa il mouse tra due colonne e trascina la linea con il cursore di ridimensionamento per cambiarne la larghezza, con minimo del 20%. Una colonna vuota accetta il blocco selezionato con un clic.

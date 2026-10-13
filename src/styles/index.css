@@ -759,6 +759,7 @@ body { background: var(--ui-ground); color: var(--ui-text); }
 .toolbar-more-menu { position: absolute; z-index: 25; top: calc(100% + 7px); right: 0; display: grid; min-width: 220px; padding: 6px; border: 1px solid var(--ui-border); border-radius: 9px; background: var(--ui-panel); box-shadow: 0 10px 28px rgba(26, 43, 65, .16); }
 .toolbar-more-menu button { width: 100%; min-height: 44px; padding: 9px 11px; border: 0; border-radius: 6px; background: transparent; color: var(--ui-text); text-align: left; white-space: normal; cursor: pointer; }
 .toolbar-more-menu button:hover, .toolbar-more-menu button:focus-visible { background: var(--ui-ground); }
+.toolbar-more-menu button small { display: block; margin-top: 4px; color: var(--ui-muted); font-size: 11px; line-height: 1.45; }
 
 /* Appearance preference covers the editor; the document uses its saved palette. */
 .theme-toggle { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 8px; min-height: 44px; padding: 3px 6px; border: 0; border-radius: 7px; background: transparent; color: var(--ui-secondary); font-size: 12px; cursor: pointer; }

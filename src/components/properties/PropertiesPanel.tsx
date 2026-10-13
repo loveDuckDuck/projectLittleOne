@@ -91,7 +91,7 @@ export function PropertiesPanel({ editRequest, selectedBlock, open, onClose, col
         </div></details>
         <div className="property-actions"><button type="button" onClick={onDuplicate}>Duplica</button><button type="button" className="danger-action" onClick={onDelete}>Elimina</button></div>
       </> : <>
-        <details className="property-disclosure"><summary>Personalizza aspetto</summary><div className="property-disclosure-body"><section className="property-section"><h3>Stile generale</h3>
+        <details className="property-disclosure" open><summary>Stile del CV</summary><div className="property-disclosure-body"><section className="property-section"><h3>Stile generale</h3>
           <label className="form-field"><span>Font del CV</span><select value={globalStyle.fontFamily} onChange={(event) => onGlobalStyleChange({ fontFamily: event.target.value })}>{STANDARD_FONTS.map((font) => <option key={font} value={font}>{font}</option>)}{globalStyle.customFont && <option value={CUSTOM_FONT_FAMILY}>{globalStyle.customFont.name}</option>}</select></label>
           <label className="form-field"><span>Carica un font personale (WOFF2, WOFF, TTF, OTF)</span><input type="file" accept=".woff2,.woff,.ttf,.otf" onChange={async (event) => { const file = event.target.files?.[0]; event.target.value = ''; if (!file) return; try { onGlobalStyleChange({ customFont: await readFont(file), fontFamily: CUSTOM_FONT_FAMILY }); setFontError(''); } catch (error) { setFontError(error instanceof Error ? error.message : 'Font non valido.'); } }} /></label>
           {globalStyle.customFont && <button type="button" className="text-action" onClick={onRemoveFont}>Rimuovi font caricato</button>}

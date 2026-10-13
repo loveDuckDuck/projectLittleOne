@@ -164,7 +164,11 @@ export function CVCanvas(props: CVCanvasProps) {
         {document.rows.map((row, index) => <Row key={row.id} row={row} number={index + 1} props={props} />)}
         {slices.slice(0, -1).map((slice, index) => <div className="page-break-indicator" style={{ top: `${slice.end}px` }} key={index}><span>Pagina {index + 2}</span></div>)}
       </div></div>
-      {!preview && <details className="canvas-help"><summary>Aiuto per organizzare le sezioni</summary><p>Usa le frecce per spostare una sezione. Per creare colonne, trascina un’altra sezione accanto a una esistente. Clicca un contenuto per aprire il campo da modificare. Usa «Sposta in…» per cambiare riga o colonna.</p></details>}
+      {!preview && <details className="canvas-help"><summary>Guida rapida: modifica, layout e salvataggio</summary>
+        <p><strong>Modifica.</strong> Clicca un contenuto nel CV e scrivi nel pannello Proprietà. Premi + nella libreria per aggiungere una sezione. Per cambiare font, colori e sfondo di tutto il documento, apri «Altre azioni» → «Stile del CV».</p>
+        <p><strong>Organizza.</strong> Seleziona una sezione e usa le frecce per riordinarla o «Sposta in…» per cambiare riga o colonna. Il menu Layout della riga crea da una a tre colonne. Puoi anche trascinare le sezioni.</p>
+        <p><strong>Conserva.</strong> Il salvataggio automatico resta in questo browser. In «Altre azioni», scarica una copia modificabile per avere un backup o continuare su un altro dispositivo. Il PDF serve per condividere il CV; per riprendere le modifiche, riapri la copia JSON.</p>
+      </details>}
     </>}
   </main>;
 }
